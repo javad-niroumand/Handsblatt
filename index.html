@@ -46,16 +46,12 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 /* ── CALL OVERLAY ── */
 #co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;border-radius:52px;font-family:-apple-system,sans-serif;}
 #co.active{display:flex;}
-
-.caller-info{text-align:center;}
-.caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:6px;}
-.caller-status{font-size:15px;color:rgba(255,255,255,.5);}
+.caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:6px;text-align:center;}
+.caller-status{font-size:15px;color:rgba(255,255,255,.5);text-align:center;}
 
 /* ── SPHERE ── */
 .sphere-wrap{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;}
 #sphere-canvas{border-radius:50%;display:block;}
-
-/* Outer glow rings */
 .ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.06);animation:ringPulse 3s ease-in-out infinite;}
 .ring:nth-child(1){width:220px;height:220px;animation-delay:0s;}
 .ring:nth-child(2){width:250px;height:250px;animation-delay:.5s;}
@@ -71,7 +67,20 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .cbg{background:rgba(255,255,255,.15);}
 .cbl{font-size:12px;color:rgba(255,255,255,.6);}
 
-#wc{display:none;}
+/* ── HIDDEN WIDGET CONTAINER ── 
+   Positioned off-screen so the widget renders & we can click it,
+   but the user never sees it */
+#wc{
+  position:fixed;
+  top:-9999px;
+  left:-9999px;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  opacity:0;
+  pointer-events:none;
+  z-index:-1;
+}
 </style>
 </head>
 <body>
@@ -137,20 +146,18 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
       </div>
     </div>
 
-    <!-- Call overlay with sphere -->
+    <!-- Call screen -->
     <div id="co">
-      <div class="caller-info">
+      <div>
         <div class="caller-name">AVA</div>
         <div class="caller-status" id="cst">Verbinden…</div>
       </div>
-
       <div class="sphere-wrap">
         <div class="ring"></div>
         <div class="ring"></div>
         <div class="ring"></div>
         <canvas id="sphere-canvas" width="180" height="180"></canvas>
       </div>
-
       <div class="cac">
         <div class="cbw" onclick="toggleMute()">
           <div class="cbi cbg" id="muteBtn"><i class="ti ti-microphone" id="muteIcon"></i></div>
@@ -161,42 +168,38 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
           <div class="cbl">Beenden</div>
         </div>
         <div class="cbw" onclick="toggleSpeaker()">
-          <div class="cbi cbg" id="spkBtn"><i class="ti ti-volume" id="spkIcon"></i></div>
+          <div class="cbi cbg" id="spkBtn"><i class="ti ti-volume"></i></div>
           <div class="cbl">Lautsprecher</div>
         </div>
       </div>
     </div>
 
-    <div id="wc"></div>
   </div>
 </div>
 
-<script>
-// ── State ──
-let audioCtx = null;
-let analyser = null;
-let micSource = null;
-let animFrame = null;
-let muted = false;
-let spherePhase = 0;
-let smoothedLevel = 0;
-let idleNoise = 0;
-let isTalking = false;
-let talkTimer = null;
-const canvas = document.getElementById('sphere-canvas');
-const ctx2d = canvas.getContext('2d');
+<!-- Widget renders here — completely hidden off-screen -->
+<div id="wc"></div>
 
-// ── Clock ──
+<script>
+// ── globals ──
+let audioCtx = null, analyser = null, micSource = null;
+let animFrame = null, muted = false;
+let smoothedLevel = 0, spherePhase = 0;
+let widgetInstance = null;
+const canvas = document.getElementById('sphere-canvas');
+const ctx2d   = canvas.getContext('2d');
+
+// ── Clock / Date ──
 function updateClock() {
   const n = new Date();
-  const h = String(n.getHours()).padStart(2,'0');
-  const m = String(n.getMinutes()).padStart(2,'0');
-  document.getElementById('clk').textContent = h+':'+m;
+  const hh = String(n.getHours()).padStart(2,'0');
+  const mm = String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('clk').textContent = hh+':'+mm;
   const tl = document.getElementById('timeLine');
-  if(tl) tl.textContent = h+':'+m;
+  if(tl) tl.textContent = hh+':'+mm;
 }
 function updateDate() {
-  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const days   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
   const months = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
   const n = new Date();
   const dl = document.getElementById('dateLine');
@@ -204,69 +207,68 @@ function updateDate() {
 }
 updateClock(); updateDate(); setInterval(updateClock, 30000);
 
-// ── iOS Notification Sound (Web Audio) ──
+// ── Audio context unlock ──
 function unlockAudio() {
   if(audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 }
-['click','touchstart','mousemove'].forEach(e => document.addEventListener(e, unlockAudio, {once:true}));
+['click','touchstart','mousemove'].forEach(e =>
+  document.addEventListener(e, unlockAudio, {once:true})
+);
 
+// ── iOS tri-tone notification sound ──
 function playNotifSound() {
   try {
     unlockAudio();
     const ac = audioCtx;
-    // iOS-style tri-tone: three short ascending notes
     const notes = [
-      {freq:1047, start:0,    dur:0.12},
-      {freq:1319, start:0.14, dur:0.12},
-      {freq:1568, start:0.28, dur:0.18},
-      {freq:1047, start:0.55, dur:0.12},
-      {freq:1319, start:0.69, dur:0.12},
-      {freq:1568, start:0.83, dur:0.18},
+      {freq:1047,start:0,   dur:0.12},
+      {freq:1319,start:0.14,dur:0.12},
+      {freq:1568,start:0.28,dur:0.18},
+      {freq:1047,start:0.55,dur:0.12},
+      {freq:1319,start:0.69,dur:0.12},
+      {freq:1568,start:0.83,dur:0.18},
     ];
-    notes.forEach(({freq, start, dur}) => {
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      const t = ac.currentTime + start;
+    notes.forEach(({freq,start,dur}) => {
+      const osc = ac.createOscillator(), gain = ac.createGain();
       osc.connect(gain); gain.connect(ac.destination);
       osc.type = 'sine';
+      const t = ac.currentTime + start;
       osc.frequency.setValueAtTime(freq, t);
       gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.28, t + 0.02);
-      gain.gain.setValueAtTime(0.28, t + dur - 0.04);
-      gain.gain.linearRampToValueAtTime(0, t + dur);
-      osc.start(t); osc.stop(t + dur + 0.01);
+      gain.gain.linearRampToValueAtTime(0.28, t+0.02);
+      gain.gain.setValueAtTime(0.28, t+dur-0.04);
+      gain.gain.linearRampToValueAtTime(0, t+dur);
+      osc.start(t); osc.stop(t+dur+0.01);
     });
-  } catch(e) { console.warn('Audio error:', e); }
+  } catch(e) { console.warn('Audio:', e); }
 }
 
-// ── Show notification after 10s ──
+// ── Show notification after 10 s ──
 setTimeout(() => {
   const n = new Date();
-  const h = String(n.getHours()).padStart(2,'0');
-  const m = String(n.getMinutes()).padStart(2,'0');
-  document.getElementById('ntm').textContent = h+':'+m;
+  document.getElementById('ntm').textContent =
+    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
   document.getElementById('nb').classList.add('show');
   playNotifSound();
 }, 10000);
 
-// ── Dismiss notification ──
+// ── Dismiss banner ──
 function decline() {
   const b = document.getElementById('nb');
   b.style.transition = 'transform .4s ease, opacity .4s ease';
-  b.style.transform = 'translateY(-160px)';
-  b.style.opacity = '0';
+  b.style.transform  = 'translateY(-160px)';
+  b.style.opacity    = '0';
   setTimeout(() => {
     b.classList.remove('show');
-    b.style.transform = '';
-    b.style.opacity = '';
-    b.style.transition = '';
+    b.style.cssText = '';
   }, 420);
 }
 
-// ── Accept → open sphere screen + start WebRTC immediately ──
+// ── Accept → show sphere → start WebRTC immediately ──
 function accept() {
   decline();
+  unlockAudio(); // must be inside user-gesture handler
   setTimeout(() => {
     document.getElementById('co').classList.add('active');
     startSphere();
@@ -278,35 +280,44 @@ function accept() {
 function endCall() {
   document.getElementById('co').classList.remove('active');
   document.getElementById('cst').textContent = 'Verbinden…';
-  if(animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
-  if(micSource) { try { micSource.disconnect(); } catch(e){} micSource = null; }
+  if(animFrame)  { cancelAnimationFrame(animFrame); animFrame = null; }
+  if(micSource)  { try { micSource.disconnect(); } catch(e){} micSource = null; }
+  // hang up via widget if possible
+  if(widgetInstance && widgetInstance.hangup) widgetInstance.hangup();
+  if(widgetInstance && widgetInstance.endCall) widgetInstance.endCall();
 }
 
-// ── Mute / Speaker toggles ──
 function toggleMute() {
   muted = !muted;
   if(micSource) {
     micSource.disconnect();
-    if(!muted) micSource.connect(analyser);
+    if(!muted && analyser) micSource.connect(analyser);
   }
   document.getElementById('muteIcon').className = muted ? 'ti ti-microphone-off' : 'ti ti-microphone';
-  document.getElementById('muteBtn').style.background = muted ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.15)';
+  document.getElementById('muteBtn').style.background = muted
+    ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.15)';
   document.getElementById('muteLabel').textContent = muted ? 'Ton an' : 'Stumm';
 }
+
 function toggleSpeaker() {
   const btn = document.getElementById('spkBtn');
-  const active = btn.dataset.active === '1';
-  btn.dataset.active = active ? '0' : '1';
-  btn.style.background = active ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.35)';
+  const on  = btn.dataset.on === '1';
+  btn.dataset.on = on ? '0' : '1';
+  btn.style.background = on ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.35)';
 }
 
-// ══════════════════════════════════════════
-// SPHERE RENDERER
-// ══════════════════════════════════════════
+// ── Sphere renderer ──
+function getAudioLevel() {
+  if(!analyser) return 0;
+  const d = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(d);
+  let s = 0; for(let i=0;i<d.length;i++) s+=d[i];
+  return s / d.length / 255;
+}
+
 function startSphere() {
-  // Try to get mic for audio-reactive animation
   if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({audio:true, video:false})
+    navigator.mediaDevices.getUserMedia({audio:true,video:false})
       .then(stream => {
         unlockAudio();
         analyser = audioCtx.createAnalyser();
@@ -316,204 +327,200 @@ function startSphere() {
         micSource.connect(analyser);
         renderSphere();
       })
-      .catch(() => { renderSphere(); }); // fallback: no mic, still animate
-  } else {
-    renderSphere();
-  }
-}
-
-function getAudioLevel() {
-  if(!analyser) return 0;
-  const data = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(data);
-  let sum = 0;
-  for(let i = 0; i < data.length; i++) sum += data[i];
-  return sum / data.length / 255;
+      .catch(() => renderSphere());
+  } else { renderSphere(); }
 }
 
 function renderSphere() {
-  const W = 180, H = 180, cx = W/2, cy = H/2, R = 72;
-  const numLines = 28;
-  let time = 0;
-
-  function drawFrame() {
-    animFrame = requestAnimationFrame(drawFrame);
-    time += 0.018;
-    spherePhase += 0.012;
-
-    const rawLevel = getAudioLevel();
-    // Smooth the level for fluid animation
-    smoothedLevel += (rawLevel - smoothedLevel) * 0.12;
-
-    // Idle breathing even when silent
-    const breath = 0.04 * Math.sin(time * 1.2);
-    const energy = smoothedLevel + breath + 0.02;
-
-    ctx2d.clearRect(0, 0, W, H);
-
-    // ── Background glow ──
-    const glowR = R + 10 + energy * 30;
-    const grd = ctx2d.createRadialGradient(cx, cy, R*0.3, cx, cy, glowR);
-    grd.addColorStop(0,   `rgba(120, 80, 255, ${0.18 + energy * 0.3})`);
-    grd.addColorStop(0.5, `rgba(60,  30, 180, ${0.10 + energy * 0.15})`);
-    grd.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx2d.beginPath();
-    ctx2d.arc(cx, cy, glowR, 0, Math.PI*2);
-    ctx2d.fillStyle = grd;
-    ctx2d.fill();
-
-    // ── Sphere base (dark glass) ──
-    const baseGrd = ctx2d.createRadialGradient(cx-20, cy-24, 4, cx, cy, R);
-    baseGrd.addColorStop(0,   `rgba(160,120,255,${0.55 + energy*0.25})`);
-    baseGrd.addColorStop(0.45,`rgba(70, 40, 200,${0.70 + energy*0.15})`);
-    baseGrd.addColorStop(1,   `rgba(10,  5,  60, 0.95)`);
-    ctx2d.beginPath();
-    ctx2d.arc(cx, cy, R, 0, Math.PI*2);
-    ctx2d.fillStyle = baseGrd;
-    ctx2d.fill();
-
-    // ── Latitude lines (deformed by audio) ──
-    ctx2d.save();
-    ctx2d.beginPath();
-    ctx2d.arc(cx, cy, R, 0, Math.PI*2);
-    ctx2d.clip();
-
-    for(let i = 0; i < numLines; i++) {
-      const t = i / numLines; // 0..1
-      const lat = (t - 0.5) * Math.PI; // -PI/2 .. PI/2
-      const ry = Math.cos(lat) * R;
-      const yOff = Math.sin(lat) * R;
-
-      // Warp amplitude based on audio + position
-      const warp = energy * 18 * Math.sin(lat * 3 + time * 2.5 + i * 0.4);
-      const baseY = cy + yOff;
-
+  const W=180,H=180,cx=90,cy=90,R=72;
+  let time=0;
+  function frame() {
+    animFrame = requestAnimationFrame(frame);
+    time += 0.018; spherePhase += 0.012;
+    const raw = getAudioLevel();
+    smoothedLevel += (raw - smoothedLevel) * 0.12;
+    const energy = smoothedLevel + 0.04*Math.sin(time*1.2) + 0.02;
+    ctx2d.clearRect(0,0,W,H);
+    // glow
+    const gr = ctx2d.createRadialGradient(cx,cy,R*.3,cx,cy,R+10+energy*30);
+    gr.addColorStop(0,`rgba(120,80,255,${0.18+energy*.3})`);
+    gr.addColorStop(.5,`rgba(60,30,180,${0.10+energy*.15})`);
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    ctx2d.beginPath(); ctx2d.arc(cx,cy,R+10+energy*30,0,Math.PI*2);
+    ctx2d.fillStyle=gr; ctx2d.fill();
+    // base
+    const bg = ctx2d.createRadialGradient(cx-20,cy-24,4,cx,cy,R);
+    bg.addColorStop(0,`rgba(160,120,255,${.55+energy*.25})`);
+    bg.addColorStop(.45,`rgba(70,40,200,${.70+energy*.15})`);
+    bg.addColorStop(1,`rgba(10,5,60,.95)`);
+    ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2);
+    ctx2d.fillStyle=bg; ctx2d.fill();
+    // lines (clipped)
+    ctx2d.save(); ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2); ctx2d.clip();
+    for(let i=0;i<28;i++){
+      const lat=(i/28-.5)*Math.PI, ry=Math.cos(lat)*R, yOff=Math.sin(lat)*R;
+      const warp=energy*18*Math.sin(lat*3+time*2.5+i*.4);
       ctx2d.beginPath();
-      // Draw ellipse as bezier for warp effect
-      const steps = 64;
-      for(let s = 0; s <= steps; s++) {
-        const angle = (s / steps) * Math.PI * 2;
-        const ex = cx + Math.cos(angle) * ry;
-        const perturbY = Math.sin(angle * 3 + time * 1.8 + i) * energy * 8;
-        const ey = baseY + Math.sin(angle) * 2 + perturbY + warp * Math.sin(angle);
-        s === 0 ? ctx2d.moveTo(ex, ey) : ctx2d.lineTo(ex, ey);
+      for(let s=0;s<=64;s++){
+        const a=(s/64)*Math.PI*2;
+        const ex=cx+Math.cos(a)*ry;
+        const ey=cy+yOff+Math.sin(a)*2+Math.sin(a*3+time*1.8+i)*energy*8+warp*Math.sin(a);
+        s===0?ctx2d.moveTo(ex,ey):ctx2d.lineTo(ex,ey);
       }
       ctx2d.closePath();
-
-      const alpha = 0.08 + energy * 0.22 + 0.06 * Math.abs(Math.sin(lat * 2 + time));
-      ctx2d.strokeStyle = `rgba(180,140,255,${alpha})`;
-      ctx2d.lineWidth = 0.8;
-      ctx2d.stroke();
+      ctx2d.strokeStyle=`rgba(180,140,255,${.08+energy*.22})`;
+      ctx2d.lineWidth=.8; ctx2d.stroke();
     }
-
-    // ── Longitude lines ──
-    const numLong = 16;
-    for(let i = 0; i < numLong; i++) {
-      const angle = (i / numLong) * Math.PI + spherePhase * 0.3;
+    for(let i=0;i<16;i++){
+      const ang=(i/16)*Math.PI+spherePhase*.3;
       ctx2d.beginPath();
-      const steps = 48;
-      for(let s = 0; s <= steps; s++) {
-        const lat = (s / steps - 0.5) * Math.PI;
-        const rr = R + energy * 14 * Math.sin(lat * 2 + time * 2 + i * 0.5);
-        const ex = cx + Math.cos(angle) * Math.cos(lat) * rr;
-        const ey = cy + Math.sin(lat) * rr;
-        s === 0 ? ctx2d.moveTo(ex, ey) : ctx2d.lineTo(ex, ey);
+      for(let s=0;s<=48;s++){
+        const lat=(s/48-.5)*Math.PI;
+        const rr=R+energy*14*Math.sin(lat*2+time*2+i*.5);
+        ctx2d.lineTo(cx+Math.cos(ang)*Math.cos(lat)*rr, cy+Math.sin(lat)*rr);
       }
-      const alpha = 0.05 + energy * 0.18;
-      ctx2d.strokeStyle = `rgba(200,160,255,${alpha})`;
-      ctx2d.lineWidth = 0.7;
-      ctx2d.stroke();
+      ctx2d.strokeStyle=`rgba(200,160,255,${.05+energy*.18})`;
+      ctx2d.lineWidth=.7; ctx2d.stroke();
     }
-
-    // ── Inner energy core ──
-    const coreR = (12 + energy * 28) * (1 + 0.08 * Math.sin(time * 4));
-    const coreGrd = ctx2d.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-    coreGrd.addColorStop(0,   `rgba(240,220,255,${0.6 + energy*0.4})`);
-    coreGrd.addColorStop(0.5, `rgba(160,100,255,${0.3 + energy*0.3})`);
-    coreGrd.addColorStop(1,   'rgba(80,40,200,0)');
-    ctx2d.beginPath();
-    ctx2d.arc(cx, cy, coreR, 0, Math.PI*2);
-    ctx2d.fillStyle = coreGrd;
-    ctx2d.fill();
-
+    // core
+    const cr=( 12+energy*28)*(1+.08*Math.sin(time*4));
+    const cg=ctx2d.createRadialGradient(cx,cy,0,cx,cy,cr);
+    cg.addColorStop(0,`rgba(240,220,255,${.6+energy*.4})`);
+    cg.addColorStop(.5,`rgba(160,100,255,${.3+energy*.3})`);
+    cg.addColorStop(1,'rgba(80,40,200,0)');
+    ctx2d.beginPath(); ctx2d.arc(cx,cy,cr,0,Math.PI*2);
+    ctx2d.fillStyle=cg; ctx2d.fill();
     ctx2d.restore();
-
-    // ── Specular highlight (glass feel) ──
-    const specGrd = ctx2d.createRadialGradient(cx-22, cy-26, 2, cx-18, cy-20, R*0.55);
-    specGrd.addColorStop(0,   'rgba(255,255,255,0.30)');
-    specGrd.addColorStop(0.5, 'rgba(255,255,255,0.06)');
-    specGrd.addColorStop(1,   'rgba(255,255,255,0)');
-    ctx2d.beginPath();
-    ctx2d.arc(cx, cy, R, 0, Math.PI*2);
-    ctx2d.fillStyle = specGrd;
-    ctx2d.fill();
-
-    // ── Edge rim light ──
-    const rimGrd = ctx2d.createRadialGradient(cx, cy, R*0.75, cx, cy, R);
-    rimGrd.addColorStop(0,   'rgba(120,80,255,0)');
-    rimGrd.addColorStop(0.7, `rgba(140,100,255,${0.06 + energy*0.12})`);
-    rimGrd.addColorStop(1,   `rgba(180,130,255,${0.18 + energy*0.22})`);
-    ctx2d.beginPath();
-    ctx2d.arc(cx, cy, R, 0, Math.PI*2);
-    ctx2d.fillStyle = rimGrd;
-    ctx2d.fill();
+    // specular
+    const sg=ctx2d.createRadialGradient(cx-22,cy-26,2,cx-18,cy-20,R*.55);
+    sg.addColorStop(0,'rgba(255,255,255,.30)'); sg.addColorStop(.5,'rgba(255,255,255,.06)'); sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2); ctx2d.fillStyle=sg; ctx2d.fill();
+    // rim
+    const rg=ctx2d.createRadialGradient(cx,cy,R*.75,cx,cy,R);
+    rg.addColorStop(0,'rgba(120,80,255,0)');
+    rg.addColorStop(.7,`rgba(140,100,255,${.06+energy*.12})`);
+    rg.addColorStop(1,`rgba(180,130,255,${.18+energy*.22})`);
+    ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2); ctx2d.fillStyle=rg; ctx2d.fill();
   }
-
-  drawFrame();
+  frame();
 }
 
-// ── WebRTC — auto-start, no widget UI shown ──
+// ══════════════════════════════════════════════════
+// WebRTC — load widget off-screen, auto-click its
+// call button so the call starts without user seeing
+// the widget UI at all.
+// ══════════════════════════════════════════════════
 function initRTC() {
   const statusEl = document.getElementById('cst');
   statusEl.textContent = 'Verbinden…';
 
+  // Load the Cognigy widget script
   const sc = document.createElement('script');
   sc.src = 'https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js';
+
   sc.onload = () => {
-    if(window.initWebRTCWidget) {
-      // Pass autoStart:true and hide the widget UI entirely
-      window.initWebRTCWidget(
-        'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96',
-        { autoStart: true, hideUI: true }
-      ).then(widget => {
-        statusEl.textContent = 'Verbunden';
-        widget.on('newRTCSession', session => {
-          statusEl.textContent = 'Gespräch läuft';
-          // Drive sphere from remote audio stream if available
-          session.on('addstream', e => {
-            try {
-              unlockAudio();
-              const remoteSource = audioCtx.createMediaStreamSource(e.stream);
-              if(!analyser) {
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 256;
-                analyser.smoothingTimeConstant = 0.8;
-              }
-              remoteSource.connect(analyser);
-            } catch(err) {}
-          });
-          session.on('newInfo', ev => {
-            try {
-              const d = JSON.parse(ev.request.body);
-              console.log('AVA data:', d);
-            } catch(e) {}
-          });
-          session.on('ended', () => {
-            statusEl.textContent = 'Anruf beendet';
-            setTimeout(endCall, 1500);
-          });
-        });
-        // Auto-initiate the call
-        if(widget.startCall) widget.startCall();
-        else if(widget.call)  widget.call();
-      }).catch(err => {
-        console.warn('WebRTC error:', err);
-        statusEl.textContent = 'Verbindung fehlgeschlagen';
-      });
+    if(!window.initWebRTCWidget) {
+      statusEl.textContent = 'Widget nicht gefunden';
+      return;
     }
+
+    window.initWebRTCWidget(
+      'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
+    ).then(widget => {
+      widgetInstance = widget;
+
+      // ── Auto-click strategy ──
+      // The widget injects a button into #wc (which is hidden off-screen).
+      // We poll until the button appears, then click it programmatically.
+      // This fires within the same user-gesture chain (accept() → initRTC()),
+      // so browsers allow microphone access.
+      let attempts = 0;
+      const MAX = 40; // 4 seconds max
+
+      function tryAutoClick() {
+        attempts++;
+
+        // Strategy 1: widget exposes a direct method
+        if(widget.startCall)  { widget.startCall();  onCallStarted(); return; }
+        if(widget.call)       { widget.call();        onCallStarted(); return; }
+        if(widget.connect)    { widget.connect();     onCallStarted(); return; }
+        if(widget.initiateCall){ widget.initiateCall(); onCallStarted(); return; }
+
+        // Strategy 2: find and click the button the widget rendered
+        const wc = document.getElementById('wc');
+        const btn = wc
+          ? (wc.querySelector('button') ||
+             wc.querySelector('[role="button"]') ||
+             wc.querySelector('.call-button') ||
+             wc.querySelector('[class*="call"]') ||
+             wc.querySelector('[class*="start"]') ||
+             wc.querySelector('[class*="btn"]'))
+          : null;
+
+        if(btn) { btn.click(); onCallStarted(); return; }
+
+        // Strategy 3: check shadow DOM
+        const all = document.querySelectorAll('*');
+        for(const el of all) {
+          if(el.shadowRoot) {
+            const sb = el.shadowRoot.querySelector('button') ||
+                       el.shadowRoot.querySelector('[role="button"]');
+            if(sb) { sb.click(); onCallStarted(); return; }
+          }
+        }
+
+        // Keep trying
+        if(attempts < MAX) {
+          setTimeout(tryAutoClick, 100);
+        } else {
+          statusEl.textContent = 'Bitte Mikrofon erlauben';
+        }
+      }
+
+      // Give widget 200ms to render its DOM, then start clicking
+      setTimeout(tryAutoClick, 200);
+
+      // ── Listen for session events ──
+      widget.on('newRTCSession', session => {
+        onCallStarted();
+
+        // Hook remote audio into sphere analyser
+        session.on('addstream', e => {
+          try {
+            unlockAudio();
+            if(!analyser) {
+              analyser = audioCtx.createAnalyser();
+              analyser.fftSize = 256;
+              analyser.smoothingTimeConstant = 0.8;
+            }
+            const remote = audioCtx.createMediaStreamSource(e.stream);
+            remote.connect(analyser);
+          } catch(err) {}
+        });
+
+        session.on('newInfo', ev => {
+          try { const d = JSON.parse(ev.request.body); console.log('AVA:', d); }
+          catch(e) {}
+        });
+
+        session.on('ended', () => {
+          statusEl.textContent = 'Anruf beendet';
+          setTimeout(endCall, 1500);
+        });
+      });
+
+    }).catch(err => {
+      console.error('WebRTC init error:', err);
+      statusEl.textContent = 'Verbindung fehlgeschlagen';
+    });
   };
-  sc.onerror = () => { statusEl.textContent = 'Widget nicht geladen'; };
+
+  sc.onerror = () => { statusEl.textContent = 'Script-Ladefehler'; };
   document.head.appendChild(sc);
+}
+
+function onCallStarted() {
+  document.getElementById('cst').textContent = 'Verbunden';
 }
 </script>
 </body>
