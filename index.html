@@ -27,6 +27,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .dock{background:rgba(255,255,255,.15);backdrop-filter:blur(20px);border-radius:26px;margin:0 16px;padding:12px 16px;display:flex;justify-content:space-around;align-items:center;}
 .di{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
 .hi{width:134px;height:5px;background:rgba(255,255,255,.35);border-radius:3px;margin:8px auto 0;display:block;}
+
 #nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;background:rgba(28,28,30,.92);backdrop-filter:blur(30px);padding:14px 16px;transform:translateY(-160px);opacity:0;transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .55s ease;pointer-events:none;font-family:-apple-system,sans-serif;}
 #nb.show{transform:translateY(0);opacity:1;pointer-events:all;}
 .nt{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
@@ -40,10 +41,12 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .nbtn{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;}
 .bdec{background:rgba(255,255,255,.12);color:#fff;}
 .bacc{background:#34c759;color:#fff;}
+
 #co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;border-radius:52px;font-family:-apple-system,sans-serif;}
 #co.active{display:flex;}
 .caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:6px;text-align:center;}
 .caller-status{font-size:15px;color:rgba(255,255,255,.5);text-align:center;}
+
 .sphere-wrap{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;}
 #sphere-canvas{border-radius:50%;display:block;}
 .ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.06);animation:ringPulse 3s ease-in-out infinite;}
@@ -51,6 +54,39 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .ring:nth-child(2){width:250px;height:250px;animation-delay:.5s;}
 .ring:nth-child(3){width:280px;height:280px;animation-delay:1s;}
 @keyframes ringPulse{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:.08;transform:scale(1.03);}}
+
+/* ── TAP TO CONNECT overlay ── */
+#tapOverlay{
+  position:absolute;
+  width:200px; height:200px;
+  border-radius:50%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px;
+  cursor:pointer;
+  z-index:10;
+}
+#tapOverlay .tap-icon{
+  width:64px;height:64px;border-radius:50%;
+  background:rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center;
+  animation:tapPulse 1.6s ease-in-out infinite;
+}
+#tapOverlay .tap-icon i{font-size:28px;color:#fff;}
+#tapOverlay .tap-label{color:rgba(255,255,255,.75);font-size:14px;font-weight:500;}
+@keyframes tapPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.08);opacity:.8;}}
+
+/* ── REAL Cognigy button gets moved + resized here, made invisible but clickable ── */
+.cognigy-real-btn-slot{
+  position:absolute !important;
+  width:200px !important; height:200px !important;
+  border-radius:50% !important;
+  opacity:0 !important;         /* invisible */
+  cursor:pointer !important;
+  z-index:20 !important;        /* on top of the fake tap overlay, catches the real click */
+  overflow:hidden !important;
+}
+.cognigy-real-btn-slot * { width:100% !important; height:100% !important; }
+
 .cac{display:flex;justify-content:space-around;width:100%;align-items:center;}
 .cbw{text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;}
 .cbi{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
@@ -58,6 +94,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .cbr{background:#ff3b30;}
 .cbg{background:rgba(255,255,255,.15);}
 .cbl{font-size:12px;color:rgba(255,255,255,.6);}
+.cac.hidden{visibility:hidden;}
 </style>
 </head>
 <body>
@@ -123,15 +160,22 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
     <div id="co">
       <div>
         <div class="caller-name">AVA</div>
-        <div class="caller-status" id="cst">Verbinden…</div>
+        <div class="caller-status" id="cst">Tippen zum Verbinden</div>
       </div>
       <div class="sphere-wrap">
         <div class="ring"></div>
         <div class="ring"></div>
         <div class="ring"></div>
         <canvas id="sphere-canvas" width="180" height="180"></canvas>
+        <!-- Fake pretty "tap to connect" prompt -->
+        <div id="tapOverlay">
+          <div class="tap-icon"><i class="ti ti-phone"></i></div>
+          <div class="tap-label">Tippen zum Verbinden</div>
+        </div>
+        <!-- The REAL Cognigy button gets moved here by JS, invisible on top -->
+        <div id="realBtnSlot" class="cognigy-real-btn-slot"></div>
       </div>
-      <div class="cac">
+      <div class="cac hidden" id="callActions">
         <div class="cbw" onclick="toggleMute()">
           <div class="cbi cbg" id="muteBtn"><i class="ti ti-microphone" id="muteIcon"></i></div>
           <div class="cbl" id="muteLabel">Stumm</div>
@@ -152,14 +196,12 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 <script src="https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js"></script>
 
 <script>
-// ── globals ──
 let audioCtx = null, analyser = null, micSource = null;
 let animFrame = null, muted = false;
 let smoothedLevel = 0, spherePhase = 0;
 const canvas = document.getElementById('sphere-canvas');
 const ctx2d  = canvas.getContext('2d');
 
-// ── Clock / Date ──
 function updateClock() {
   const n = new Date();
   const hh = String(n.getHours()).padStart(2,'0');
@@ -228,19 +270,23 @@ function decline() {
   setTimeout(() => { b.classList.remove('show'); b.style.cssText = ''; }, 420);
 }
 
+// ── ACCEPT: dismiss notification, show call screen with "tap to connect",
+//    pre-load the widget so the real button is ready the instant the user taps.
 function accept() {
   decline();
   unlockAudio();
   setTimeout(() => {
     document.getElementById('co').classList.add('active');
     startSphere();
-    initRTC();
+    prepareRTC(); // loads widget + positions real button UNDER our fake overlay
   }, 450);
 }
 
 function endCall() {
   document.getElementById('co').classList.remove('active');
-  document.getElementById('cst').textContent = 'Verbinden…';
+  document.getElementById('cst').textContent = 'Tippen zum Verbinden';
+  document.getElementById('callActions').classList.add('hidden');
+  document.getElementById('tapOverlay').style.display = 'flex';
   if(animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
   if(micSource) { try { micSource.disconnect(); } catch(e){} micSource = null; }
 }
@@ -350,151 +396,123 @@ function renderSphere() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// WebRTC — NUCLEAR APPROACH
+// WebRTC — REAL button, disguised
 //
-// Strategy:
-// 1. Snapshot every element in <body> BEFORE calling initWebRTCWidget
-// 2. After widget inits, find ALL new elements it added
-// 3. Hide every new element with inline style (beats any CSS)
-// 4. Find ANY clickable element inside them and .click() it
-// 5. Set up a MutationObserver to hide + click anything new
-// 6. Log everything to console for debugging
+// 1. Load the widget as soon as the call screen opens (not on tap)
+// 2. Watch for its button to appear anywhere in the DOM
+// 3. Physically MOVE that real button element into #realBtnSlot
+//    (same element, same click handlers — just relocated)
+// 4. Make it fill the 200x200 circle, transparent, on top of our
+//    pretty "tap to connect" graphic
+// 5. When the user taps, their REAL click lands on Cognigy's REAL
+//    button — satisfies browser trust requirements for mic access
+// 6. Watch for the call to actually start (session events), then
+//    swap the UI to the full in-call controls
 // ══════════════════════════════════════════════════════════════
-function initRTC() {
+let widgetRef = null;
+let realButtonFound = false;
+
+function prepareRTC() {
   const statusEl = document.getElementById('cst');
-  statusEl.textContent = 'Verbinden…';
+  const slot = document.getElementById('realBtnSlot');
 
   if(!window.initWebRTCWidget) {
     statusEl.textContent = 'Widget nicht verfügbar';
-    console.error('[AVA] window.initWebRTCWidget not found');
     return;
   }
 
-  // Step 1: snapshot all current body children
-  const existingElements = new Set();
-  document.body.querySelectorAll('*').forEach(el => existingElements.add(el));
+  // snapshot existing body children so we can spot the NEW one
   const existingTopLevel = new Set(Array.from(document.body.children));
 
-  console.log('[AVA] Existing body children:', existingTopLevel.size);
-
-  // Step 2: Set up MutationObserver BEFORE calling init
-  let autoClicked = false;
-
-  function hideElement(el) {
-    el.style.cssText = 'position:fixed!important;top:-99999px!important;left:-99999px!important;width:0!important;height:0!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;visibility:hidden!important;z-index:-99999!important;';
-  }
-
-  function findAndClickButton(root) {
-    if(autoClicked) return;
-    // Find ANY clickable thing
-    const candidates = root.querySelectorAll('button, [role="button"], a, [onclick], input[type="button"], input[type="submit"], div[tabindex], span[tabindex]');
-    console.log('[AVA] Found', candidates.length, 'clickable elements in widget');
-
-    for(const btn of candidates) {
-      console.log('[AVA] Candidate:', btn.tagName, btn.className, btn.textContent.trim().substring(0,50));
-    }
-
-    if(candidates.length > 0) {
-      autoClicked = true;
-      const btn = candidates[0];
-      console.log('[AVA] AUTO-CLICKING:', btn.tagName, btn.className, btn.textContent.trim().substring(0,30));
-      btn.style.pointerEvents = 'auto';
-      btn.click();
-      statusEl.textContent = 'Verbunden';
-    }
-  }
-
   const observer = new MutationObserver(mutations => {
+    if(realButtonFound) return;
     for(const mutation of mutations) {
       for(const node of mutation.addedNodes) {
-        if(node.nodeType !== 1) continue; // skip text nodes
-        // Is this a NEW top-level element the widget added?
+        if(node.nodeType !== 1) continue;
         if(node.parentElement === document.body && !existingTopLevel.has(node)) {
-          console.log('[AVA] NEW widget element detected:', node.tagName, node.className, node.id);
-          // Log its full HTML for debugging
-          console.log('[AVA] Widget HTML:', node.outerHTML.substring(0,500));
-          // Hide it
-          hideElement(node);
-          // Try to click its button
-          setTimeout(() => findAndClickButton(node), 100);
-          setTimeout(() => findAndClickButton(node), 300);
-          setTimeout(() => findAndClickButton(node), 600);
-          setTimeout(() => findAndClickButton(node), 1000);
-          setTimeout(() => findAndClickButton(node), 2000);
-        }
-        // Also catch elements added deeper in the tree
-        if(!existingElements.has(node) && !document.getElementById('myShell').contains(node)) {
-          // This is a widget element added somewhere
-          if(node.matches && (node.matches('button') || node.matches('[role="button"]'))) {
-            console.log('[AVA] Button appeared in subtree:', node.tagName, node.className, node.textContent.trim().substring(0,30));
-            if(!autoClicked) {
-              autoClicked = true;
-              node.style.pointerEvents = 'auto';
-              node.click();
-              statusEl.textContent = 'Verbunden';
-            }
+          // This is the widget's root element.
+          const btn = node.querySelector('button, [role="button"]');
+          if(btn) {
+            realButtonFound = true;
+            observer.disconnect();
+            relocateRealButton(node, btn, slot);
           }
         }
       }
     }
   });
-
   observer.observe(document.body, { childList: true, subtree: true });
-
-  // Step 3: Call the widget
-  console.log('[AVA] Calling initWebRTCWidget...');
 
   window.initWebRTCWidget(
     'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
   ).then(widget => {
-    console.log('[AVA] Widget initialized. Methods:', Object.keys(widget));
-    console.log('[AVA] Widget prototype:', Object.getOwnPropertyNames(Object.getPrototypeOf(widget)));
+    widgetRef = widget;
 
-    // Log ALL methods on the widget to find a direct call method
-    for(const key in widget) {
-      console.log('[AVA] widget.' + key, '=', typeof widget[key]);
-    }
+    widget.on('newRTCSession', session => {
+      // The real button worked — call started. Swap to full call UI.
+      document.getElementById('tapOverlay').style.display = 'none';
+      const s = document.getElementById('realBtnSlot');
+      if(s) s.style.display = 'none';
+      document.getElementById('callActions').classList.remove('hidden');
+      statusEl.textContent = 'Verbunden';
 
-    // Try every possible direct-call method
-    const callMethods = ['startCall','call','connect','initiateCall','start','makeCall','begin','dial','open'];
-    for(const m of callMethods) {
-      if(typeof widget[m] === 'function') {
-        console.log('[AVA] Found direct method:', m, '— calling it');
-        try { widget[m](); autoClicked = true; statusEl.textContent = 'Verbunden'; } catch(e) { console.warn('[AVA]', m, 'failed:', e); }
-        break;
-      }
-    }
-
-    // Also do a brute-force scan of body for new elements
-    setTimeout(() => {
-      if(autoClicked) return;
-      console.log('[AVA] Fallback: scanning entire body for new elements...');
-      Array.from(document.body.children).forEach(el => {
-        if(!existingTopLevel.has(el)) {
-          console.log('[AVA] Fallback found:', el.tagName, el.className, el.id);
-          hideElement(el);
-          findAndClickButton(el);
-        }
+      if(session.connection) hookRemoteAudio(session.connection);
+      session.on('peerconnection', evt => hookRemoteAudio(evt.peerconnection));
+      session.on('addstream', evt => hookStream(evt.stream));
+      session.on('ended', () => {
+        statusEl.textContent = 'Anruf beendet';
+        setTimeout(endCall, 1500);
       });
-    }, 500);
-
-    // Keep scanning every second for 10s
-    let scanCount = 0;
-    const scanInterval = setInterval(() => {
-      scanCount++;
-      if(autoClicked || scanCount > 10) { clearInterval(scanInterval); observer.disconnect(); return; }
-      Array.from(document.body.children).forEach(el => {
-        if(!existingTopLevel.has(el)) {
-          hideElement(el);
-          findAndClickButton(el);
-        }
-      });
-    }, 1000);
-
+    });
   }).catch(err => {
-    console.error('[AVA] Widget error:', err);
+    console.error('Widget error:', err);
     statusEl.textContent = 'Verbindung fehlgeschlagen';
   });
+
+  // Fallback: if the widget root already existed before observer attached
+  setTimeout(() => {
+    if(realButtonFound) return;
+    Array.from(document.body.children).forEach(node => {
+      if(!existingTopLevel.has(node)) {
+        const btn = node.querySelector('button, [role="button"]');
+        if(btn) {
+          realButtonFound = true;
+          observer.disconnect();
+          relocateRealButton(node, btn, slot);
+        }
+      }
+    });
+  }, 800);
+}
+
+function relocateRealButton(widgetRoot, btn, slot) {
+  // Move the widget root itself off-screen (it has extra chrome we don't want),
+  // but keep the actual <button> element alive by moving IT into our slot.
+  // Moving a DOM node preserves all its event listeners.
+  widgetRoot.style.cssText = 'position:fixed!important;top:-99999px!important;left:-99999px!important;pointer-events:none!important;opacity:0!important;';
+
+  slot.appendChild(btn);
+  btn.style.cssText = 'width:100%!important;height:100%!important;border-radius:50%!important;opacity:0!important;background:transparent!important;border:none!important;cursor:pointer!important;';
+}
+
+function hookRemoteAudio(pc) {
+  if(!pc) return;
+  pc.addEventListener('track', evt => {
+    if(evt.track.kind === 'audio') hookStream(new MediaStream([evt.track]));
+  });
+  pc.addEventListener('addstream', evt => hookStream(evt.stream));
+}
+function hookStream(stream) {
+  try {
+    unlockAudio();
+    if(!analyser) {
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+    }
+    const src = audioCtx.createMediaStreamSource(stream);
+    src.connect(analyser);
+  } catch(e) {}
 }
 </script>
 </body>
