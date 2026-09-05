@@ -7,8 +7,59 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#000;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:2rem 0;}
-.shell{width:375px;height:812px;background:#000;border-radius:52px;box-shadow:0 0 0 2px #3a3a3c,0 0 0 5px #1c1c1e,0 30px 80px rgba(0,0,0,.6);position:relative;overflow:hidden;flex-shrink:0;}
+
+/* The page is a stacking context.
+   Layer 0 (bottom): Cognigy widget rendered here, completely off to the side
+   Layer 1: phone shell sits on top, clips everything inside
+   Layer 2: our notification + call UI inside the shell */
+body{
+  background:#000;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  min-height:100vh;
+  padding:2rem 0;
+  position:relative;
+}
+
+/* ── COGNIGY WIDGET PRISON ──
+   Rendered far off-screen left, invisible to the user.
+   The widget's call button will be measured + overlaid by JS. */
+#cognigy-prison{
+  position:fixed;
+  top: 0;
+  left:-9999px;
+  width:200px;
+  height:200px;
+  pointer-events:all;  /* must accept clicks */
+  z-index:1;           /* below the phone */
+  overflow:visible;
+}
+
+/* ── GHOST BUTTON ──
+   An absolutely-positioned transparent clone that sits
+   exactly where Cognigy's real button is, but follows
+   our phone's "Annehmen" button position.
+   When user clicks "Annehmen", we redirect that click here,
+   which lands on the real Cognigy button underneath. */
+#ghost-click-layer{
+  position:fixed;
+  pointer-events:none; /* off until we need it */
+  z-index:0;
+  background:transparent;
+  border:none;
+  padding:0;
+  cursor:pointer;
+}
+
+/* ── PHONE ── */
+.shell{
+  width:375px;height:812px;background:#000;
+  border-radius:52px;
+  box-shadow:0 0 0 2px #3a3a3c,0 0 0 5px #1c1c1e,0 30px 80px rgba(0,0,0,.6);
+  position:relative;overflow:hidden;flex-shrink:0;
+  z-index:10; /* above the widget */
+}
 .screen{position:absolute;inset:0;border-radius:52px;overflow:hidden;display:flex;flex-direction:column;}
 .wp{position:absolute;inset:0;background:url('iClarified-iOS27-Celosia-Color-LockScreen.jpeg') center/cover no-repeat;z-index:0;}
 .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:34px;background:#000;border-radius:0 0 22px 22px;z-index:50;}
@@ -19,7 +70,11 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .hc{position:relative;z-index:5;flex:1;display:flex;flex-direction:column;padding:0 0 20px;}
 .dw{text-align:center;padding:26px 0 10px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;}
 .dd{font-size:29px;font-weight:600;letter-spacing:.1px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.3);margin-bottom:4px;}
-.dn{font-size:108px;font-weight:600;line-height:1;letter-spacing:-2px;color:transparent;background-image:linear-gradient(135deg,rgba(255,255,255,.9) 0%,rgba(255,255,255,.3) 10%,rgba(255,255,255,.08) 28%,rgba(255,255,255,.4) 52%,rgba(255,255,255,.1) 100%),url('iClarified-iOS27-Celosia-Color-LockScreen.jpeg');background-size:375px 814.75px,375px 814.75px;background-repeat:no-repeat;background-position:0 0,0 -104.375px;-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:0.6px rgba(255,255,255,.55);filter:brightness(1.8) saturate(1.5) contrast(1.15) blur(0.4px);text-shadow:0 3px 8px rgba(0,0,0,.45);}
+.dn{font-size:108px;font-weight:600;line-height:1;letter-spacing:-2px;color:transparent;
+  background-image:linear-gradient(135deg,rgba(255,255,255,.9) 0%,rgba(255,255,255,.3) 10%,rgba(255,255,255,.08) 28%,rgba(255,255,255,.4) 52%,rgba(255,255,255,.1) 100%),url('iClarified-iOS27-Celosia-Color-LockScreen.jpeg');
+  background-size:375px 814.75px,375px 814.75px;background-repeat:no-repeat;background-position:0 0,0 -104.375px;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-stroke:0.6px rgba(255,255,255,.55);
+  filter:brightness(1.8) saturate(1.5) contrast(1.15) blur(0.4px);text-shadow:0 3px 8px rgba(0,0,0,.45);}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);align-content:start;gap:18px 10px;padding:16px 22px;flex:1;}
 .ai{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;}
 .ic{width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -28,7 +83,12 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .di{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
 .hi{width:134px;height:5px;background:rgba(255,255,255,.35);border-radius:3px;margin:8px auto 0;display:block;}
 
-#nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;background:rgba(28,28,30,.92);backdrop-filter:blur(30px);padding:14px 16px;transform:translateY(-160px);opacity:0;transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .55s ease;pointer-events:none;font-family:-apple-system,sans-serif;}
+/* ── NOTIFICATION ── */
+#nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;
+  background:rgba(28,28,30,.92);backdrop-filter:blur(30px);padding:14px 16px;
+  transform:translateY(-160px);opacity:0;
+  transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .55s ease;
+  pointer-events:none;font-family:-apple-system,sans-serif;}
 #nb.show{transform:translateY(0);opacity:1;pointer-events:all;}
 .nt{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .nai{width:32px;height:32px;border-radius:8px;background:#451DC7;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -38,15 +98,31 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .ntit{font-size:16px;font-weight:600;color:#fff;margin-bottom:3px;}
 .nbod{font-size:14px;color:rgba(255,255,255,.7);line-height:1.4;}
 .nact{display:flex;gap:8px;margin-top:12px;}
-.nbtn{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;}
-.bdec{background:rgba(255,255,255,.12);color:#fff;}
-.bacc{background:#34c759;color:#fff;}
 
-#co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;border-radius:52px;font-family:-apple-system,sans-serif;}
+/* Annehmen button — this is what the user sees AND clicks.
+   Via JS we will position Cognigy's real button exactly
+   behind this one so the click hits both. */
+#btn-annehmen{
+  flex:1;padding:10px;border-radius:12px;border:none;
+  font-size:15px;font-weight:600;cursor:pointer;
+  font-family:-apple-system,sans-serif;
+  background:#34c759;color:#fff;
+  position:relative; z-index:5;
+}
+#btn-ablehnen{
+  flex:1;padding:10px;border-radius:12px;border:none;
+  font-size:15px;font-weight:600;cursor:pointer;
+  font-family:-apple-system,sans-serif;
+  background:rgba(255,255,255,.12);color:#fff;
+}
+
+/* ── CALL OVERLAY ── */
+#co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;
+  align-items:center;justify-content:space-between;padding:70px 30px 55px;
+  border-radius:52px;font-family:-apple-system,sans-serif;}
 #co.active{display:flex;}
 .caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:6px;text-align:center;}
 .caller-status{font-size:15px;color:rgba(255,255,255,.5);text-align:center;}
-
 .sphere-wrap{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;}
 #sphere-canvas{border-radius:50%;display:block;}
 .ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.06);animation:ringPulse 3s ease-in-out infinite;}
@@ -54,39 +130,6 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .ring:nth-child(2){width:250px;height:250px;animation-delay:.5s;}
 .ring:nth-child(3){width:280px;height:280px;animation-delay:1s;}
 @keyframes ringPulse{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:.08;transform:scale(1.03);}}
-
-/* ── TAP TO CONNECT overlay ── */
-#tapOverlay{
-  position:absolute;
-  width:200px; height:200px;
-  border-radius:50%;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:10px;
-  cursor:pointer;
-  z-index:10;
-}
-#tapOverlay .tap-icon{
-  width:64px;height:64px;border-radius:50%;
-  background:rgba(255,255,255,.12);
-  display:flex;align-items:center;justify-content:center;
-  animation:tapPulse 1.6s ease-in-out infinite;
-}
-#tapOverlay .tap-icon i{font-size:28px;color:#fff;}
-#tapOverlay .tap-label{color:rgba(255,255,255,.75);font-size:14px;font-weight:500;}
-@keyframes tapPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.08);opacity:.8;}}
-
-/* ── REAL Cognigy button gets moved + resized here, made invisible but clickable ── */
-.cognigy-real-btn-slot{
-  position:absolute !important;
-  width:200px !important; height:200px !important;
-  border-radius:50% !important;
-  opacity:0 !important;         /* invisible */
-  cursor:pointer !important;
-  z-index:20 !important;        /* on top of the fake tap overlay, catches the real click */
-  overflow:hidden !important;
-}
-.cognigy-real-btn-slot * { width:100% !important; height:100% !important; }
-
 .cac{display:flex;justify-content:space-around;width:100%;align-items:center;}
 .cbw{text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;}
 .cbi{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
@@ -94,11 +137,19 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .cbr{background:#ff3b30;}
 .cbg{background:rgba(255,255,255,.15);}
 .cbl{font-size:12px;color:rgba(255,255,255,.6);}
-.cac.hidden{visibility:hidden;}
 </style>
 </head>
 <body>
 
+<!-- ════════════════════════════════════════════════
+     LAYER 0 — Cognigy widget lives here, off-screen.
+     Its button will be measured + overlaid by JS.
+════════════════════════════════════════════════ -->
+<div id="cognigy-prison"></div>
+
+<!-- ════════════════════════════════════════════════
+     LAYER 1 — Phone shell (z-index 10, on top)
+════════════════════════════════════════════════ -->
 <div class="shell" id="myShell">
   <div class="notch"></div>
   <div class="screen">
@@ -143,6 +194,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
       <div class="hi"></div>
     </div>
 
+    <!-- Notification -->
     <div id="nb">
       <div class="nt">
         <div class="nai"><i class="ti ti-sparkles"></i></div>
@@ -152,30 +204,25 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
       <div class="ntit">Persönliche KI-Assistentin</div>
       <div class="nbod">Hey Eugen, 2 Minuten? 👋</div>
       <div class="nact">
-        <button class="nbtn bdec" onclick="decline()">Ablehnen</button>
-        <button class="nbtn bacc" onclick="accept()">Annehmen</button>
+        <button id="btn-ablehnen" onclick="decline()">Ablehnen</button>
+        <!-- This button's real click is caught by Cognigy's real button underneath -->
+        <button id="btn-annehmen" onclick="accept(event)">Annehmen</button>
       </div>
     </div>
 
+    <!-- Call screen -->
     <div id="co">
       <div>
         <div class="caller-name">AVA</div>
-        <div class="caller-status" id="cst">Tippen zum Verbinden</div>
+        <div class="caller-status" id="cst">Verbinden…</div>
       </div>
       <div class="sphere-wrap">
         <div class="ring"></div>
         <div class="ring"></div>
         <div class="ring"></div>
         <canvas id="sphere-canvas" width="180" height="180"></canvas>
-        <!-- Fake pretty "tap to connect" prompt -->
-        <div id="tapOverlay">
-          <div class="tap-icon"><i class="ti ti-phone"></i></div>
-          <div class="tap-label">Tippen zum Verbinden</div>
-        </div>
-        <!-- The REAL Cognigy button gets moved here by JS, invisible on top -->
-        <div id="realBtnSlot" class="cognigy-real-btn-slot"></div>
       </div>
-      <div class="cac hidden" id="callActions">
+      <div class="cac">
         <div class="cbw" onclick="toggleMute()">
           <div class="cbi cbg" id="muteBtn"><i class="ti ti-microphone" id="muteIcon"></i></div>
           <div class="cbl" id="muteLabel">Stumm</div>
@@ -190,18 +237,25 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
+<!-- Cognigy widget script loads at page start -->
 <script src="https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js"></script>
 
 <script>
+// ── globals ──
 let audioCtx = null, analyser = null, micSource = null;
 let animFrame = null, muted = false;
 let smoothedLevel = 0, spherePhase = 0;
+let cognigyBtn = null;       // the real Cognigy DOM button
+let widgetReady = false;     // widget has resolved
+let widgetRef = null;
 const canvas = document.getElementById('sphere-canvas');
 const ctx2d  = canvas.getContext('2d');
 
+// ── Clock / Date ──
 function updateClock() {
   const n = new Date();
   const hh = String(n.getHours()).padStart(2,'0');
@@ -219,6 +273,7 @@ function updateDate() {
 }
 updateClock(); updateDate(); setInterval(updateClock, 30000);
 
+// ── Audio ──
 function unlockAudio() {
   if(audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -227,19 +282,14 @@ function unlockAudio() {
   document.addEventListener(e, unlockAudio, {once:true})
 );
 
+// ── iOS tri-tone ──
 function playNotifSound() {
   try {
     unlockAudio();
     const ac = audioCtx;
-    const notes = [
-      {freq:1047,start:0,   dur:0.12},
-      {freq:1319,start:0.14,dur:0.12},
-      {freq:1568,start:0.28,dur:0.18},
-      {freq:1047,start:0.55,dur:0.12},
-      {freq:1319,start:0.69,dur:0.12},
-      {freq:1568,start:0.83,dur:0.18},
-    ];
-    notes.forEach(({freq,start,dur}) => {
+    [{freq:1047,start:0,dur:0.12},{freq:1319,start:0.14,dur:0.12},{freq:1568,start:0.28,dur:0.18},
+     {freq:1047,start:0.55,dur:0.12},{freq:1319,start:0.69,dur:0.12},{freq:1568,start:0.83,dur:0.18}]
+    .forEach(({freq,start,dur}) => {
       const osc = ac.createOscillator(), gain = ac.createGain();
       osc.connect(gain); gain.connect(ac.destination);
       osc.type = 'sine';
@@ -254,6 +304,53 @@ function playNotifSound() {
   } catch(e) {}
 }
 
+// ══════════════════════════════════════════════════════
+// STEP 1 — Load Cognigy widget silently on page load.
+//           The widget renders into #cognigy-prison
+//           which is fixed at left:-9999px.
+//           We wait for its button to appear in the DOM.
+// ══════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  if(!window.initWebRTCWidget) return;
+
+  const prison = document.getElementById('cognigy-prison');
+  const existingIds = new Set(Array.from(document.body.querySelectorAll('*')).map(e=>e));
+
+  // Watch for the widget's elements to appear
+  const obs = new MutationObserver(() => {
+    if(cognigyBtn) return;
+    // Search everywhere in the document for a button the widget added
+    const allBtns = document.querySelectorAll('button, [role="button"]');
+    allBtns.forEach(btn => {
+      if(!existingIds.has(btn) && !document.getElementById('myShell').contains(btn)) {
+        cognigyBtn = btn;
+        obs.disconnect();
+        console.log('[AVA] Cognigy button found:', btn.className, btn.textContent.trim());
+        // Move Cognigy's entire widget root into the prison div so it's contained
+        const widgetRoot = btn.closest('[class*="widget"], [class*="webrtc"], [id*="widget"], [id*="webrtc"]') || btn.parentElement;
+        if(widgetRoot && widgetRoot !== document.body) {
+          prison.appendChild(widgetRoot);
+        }
+      }
+    });
+  });
+  obs.observe(document.body, {childList:true, subtree:true});
+
+  // Initialize the widget — it renders its button into body
+  window.initWebRTCWidget(
+    'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
+  ).then(widget => {
+    widgetRef = widget;
+    widgetReady = true;
+    console.log('[AVA] Widget ready');
+
+    widget.on('newRTCSession', session => {
+      onCallConnected(session);
+    });
+  }).catch(err => console.error('[AVA] Widget error:', err));
+});
+
+// ── Show notification after 10s ──
 setTimeout(() => {
   const n = new Date();
   document.getElementById('ntm').textContent =
@@ -267,28 +364,88 @@ function decline() {
   b.style.transition = 'transform .4s ease, opacity .4s ease';
   b.style.transform  = 'translateY(-160px)';
   b.style.opacity    = '0';
-  setTimeout(() => { b.classList.remove('show'); b.style.cssText = ''; }, 420);
+  setTimeout(() => { b.classList.remove('show'); b.style.cssText=''; }, 420);
 }
 
-// ── ACCEPT: dismiss notification, show call screen with "tap to connect",
-//    pre-load the widget so the real button is ready the instant the user taps.
-function accept() {
-  decline();
+// ══════════════════════════════════════════════════════
+// STEP 2 — User clicks "Annehmen".
+//
+//  The key trick:
+//  We position Cognigy's real button at EXACTLY the same
+//  screen coordinates as the "Annehmen" button BEFORE
+//  the click event fires, then programmatically re-fire
+//  the click on the Cognigy button from within the same
+//  synchronous event handler — keeping isTrusted chain intact.
+//
+//  Because we are inside a real user click handler, calling
+//  .click() on another element within the same callstack
+//  IS treated as trusted in most browsers.
+// ══════════════════════════════════════════════════════
+function accept(event) {
   unlockAudio();
+
+  // Position Cognigy's button exactly where Annehmen button is
+  // then click it — we're still inside the real user gesture
+  if(cognigyBtn) {
+    const annahmenRect = document.getElementById('btn-annehmen').getBoundingClientRect();
+
+    // Move cognigyBtn to exact screen position of Annehmen button
+    cognigyBtn.style.cssText = `
+      position:fixed !important;
+      top:${annahmenRect.top}px !important;
+      left:${annahmenRect.left}px !important;
+      width:${annahmenRect.width}px !important;
+      height:${annahmenRect.height}px !important;
+      opacity:0 !important;
+      z-index:9999 !important;
+      pointer-events:all !important;
+      border:none !important;
+      padding:0 !important;
+      margin:0 !important;
+      cursor:pointer !important;
+    `;
+    document.body.appendChild(cognigyBtn);
+
+    // Click it — still within the user gesture callstack
+    cognigyBtn.click();
+
+    // Move it back to prison
+    setTimeout(() => {
+      cognigyBtn.style.cssText = '';
+      document.getElementById('cognigy-prison').appendChild(cognigyBtn);
+    }, 500);
+  }
+
+  // Show our call UI
+  decline();
   setTimeout(() => {
     document.getElementById('co').classList.add('active');
+    document.getElementById('cst').textContent = 'Verbinden…';
     startSphere();
-    prepareRTC(); // loads widget + positions real button UNDER our fake overlay
   }, 450);
+}
+
+function onCallConnected(session) {
+  document.getElementById('cst').textContent = 'Verbunden';
+
+  if(session.connection) hookRemoteAudio(session.connection);
+  session.on('peerconnection', e => hookRemoteAudio(e.peerconnection));
+  session.on('addstream', e => hookStream(e.stream));
+  session.on('ended', () => {
+    document.getElementById('cst').textContent = 'Anruf beendet';
+    setTimeout(endCall, 1500);
+  });
 }
 
 function endCall() {
   document.getElementById('co').classList.remove('active');
-  document.getElementById('cst').textContent = 'Tippen zum Verbinden';
-  document.getElementById('callActions').classList.add('hidden');
-  document.getElementById('tapOverlay').style.display = 'flex';
+  document.getElementById('cst').textContent = 'Verbinden…';
   if(animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
   if(micSource) { try { micSource.disconnect(); } catch(e){} micSource = null; }
+  try {
+    if(widgetRef && widgetRef.endCall) widgetRef.endCall();
+    if(widgetRef && widgetRef.hangup)  widgetRef.hangup();
+  } catch(e) {}
 }
 
 function toggleMute() {
@@ -332,26 +489,26 @@ function renderSphere() {
   let time=0;
   function frame() {
     animFrame = requestAnimationFrame(frame);
-    time += 0.018; spherePhase += 0.012;
-    const raw = getAudioLevel();
-    smoothedLevel += (raw - smoothedLevel) * 0.12;
-    const energy = smoothedLevel + 0.04*Math.sin(time*1.2) + 0.02;
+    time+=0.018; spherePhase+=0.012;
+    const raw=getAudioLevel();
+    smoothedLevel+=(raw-smoothedLevel)*0.12;
+    const energy=smoothedLevel+0.04*Math.sin(time*1.2)+0.02;
     ctx2d.clearRect(0,0,W,H);
-    const gr = ctx2d.createRadialGradient(cx,cy,R*.3,cx,cy,R+10+energy*30);
+    const gr=ctx2d.createRadialGradient(cx,cy,R*.3,cx,cy,R+10+energy*30);
     gr.addColorStop(0,`rgba(120,80,255,${0.18+energy*.3})`);
     gr.addColorStop(.5,`rgba(60,30,180,${0.10+energy*.15})`);
     gr.addColorStop(1,'rgba(0,0,0,0)');
-    ctx2d.beginPath(); ctx2d.arc(cx,cy,R+10+energy*30,0,Math.PI*2);
-    ctx2d.fillStyle=gr; ctx2d.fill();
-    const bg = ctx2d.createRadialGradient(cx-20,cy-24,4,cx,cy,R);
+    ctx2d.beginPath();ctx2d.arc(cx,cy,R+10+energy*30,0,Math.PI*2);
+    ctx2d.fillStyle=gr;ctx2d.fill();
+    const bg=ctx2d.createRadialGradient(cx-20,cy-24,4,cx,cy,R);
     bg.addColorStop(0,`rgba(160,120,255,${.55+energy*.25})`);
     bg.addColorStop(.45,`rgba(70,40,200,${.70+energy*.15})`);
     bg.addColorStop(1,`rgba(10,5,60,.95)`);
-    ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2);
-    ctx2d.fillStyle=bg; ctx2d.fill();
-    ctx2d.save(); ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2); ctx2d.clip();
+    ctx2d.beginPath();ctx2d.arc(cx,cy,R,0,Math.PI*2);
+    ctx2d.fillStyle=bg;ctx2d.fill();
+    ctx2d.save();ctx2d.beginPath();ctx2d.arc(cx,cy,R,0,Math.PI*2);ctx2d.clip();
     for(let i=0;i<28;i++){
-      const lat=(i/28-.5)*Math.PI, ry=Math.cos(lat)*R, yOff=Math.sin(lat)*R;
+      const lat=(i/28-.5)*Math.PI,ry=Math.cos(lat)*R,yOff=Math.sin(lat)*R;
       const warp=energy*18*Math.sin(lat*3+time*2.5+i*.4);
       ctx2d.beginPath();
       for(let s=0;s<=64;s++){
@@ -362,7 +519,7 @@ function renderSphere() {
       }
       ctx2d.closePath();
       ctx2d.strokeStyle=`rgba(180,140,255,${.08+energy*.22})`;
-      ctx2d.lineWidth=.8; ctx2d.stroke();
+      ctx2d.lineWidth=.8;ctx2d.stroke();
     }
     for(let i=0;i<16;i++){
       const ang=(i/16)*Math.PI+spherePhase*.3;
@@ -370,148 +527,41 @@ function renderSphere() {
       for(let s=0;s<=48;s++){
         const lat=(s/48-.5)*Math.PI;
         const rr=R+energy*14*Math.sin(lat*2+time*2+i*.5);
-        ctx2d.lineTo(cx+Math.cos(ang)*Math.cos(lat)*rr, cy+Math.sin(lat)*rr);
+        ctx2d.lineTo(cx+Math.cos(ang)*Math.cos(lat)*rr,cy+Math.sin(lat)*rr);
       }
       ctx2d.strokeStyle=`rgba(200,160,255,${.05+energy*.18})`;
-      ctx2d.lineWidth=.7; ctx2d.stroke();
+      ctx2d.lineWidth=.7;ctx2d.stroke();
     }
     const cr=(12+energy*28)*(1+.08*Math.sin(time*4));
     const cg2=ctx2d.createRadialGradient(cx,cy,0,cx,cy,cr);
     cg2.addColorStop(0,`rgba(240,220,255,${.6+energy*.4})`);
     cg2.addColorStop(.5,`rgba(160,100,255,${.3+energy*.3})`);
     cg2.addColorStop(1,'rgba(80,40,200,0)');
-    ctx2d.beginPath(); ctx2d.arc(cx,cy,cr,0,Math.PI*2);
-    ctx2d.fillStyle=cg2; ctx2d.fill();
+    ctx2d.beginPath();ctx2d.arc(cx,cy,cr,0,Math.PI*2);
+    ctx2d.fillStyle=cg2;ctx2d.fill();
     ctx2d.restore();
     const sg=ctx2d.createRadialGradient(cx-22,cy-26,2,cx-18,cy-20,R*.55);
-    sg.addColorStop(0,'rgba(255,255,255,.30)'); sg.addColorStop(.5,'rgba(255,255,255,.06)'); sg.addColorStop(1,'rgba(255,255,255,0)');
-    ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2); ctx2d.fillStyle=sg; ctx2d.fill();
+    sg.addColorStop(0,'rgba(255,255,255,.30)');sg.addColorStop(.5,'rgba(255,255,255,.06)');sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx2d.beginPath();ctx2d.arc(cx,cy,R,0,Math.PI*2);ctx2d.fillStyle=sg;ctx2d.fill();
     const rg=ctx2d.createRadialGradient(cx,cy,R*.75,cx,cy,R);
     rg.addColorStop(0,'rgba(120,80,255,0)');
     rg.addColorStop(.7,`rgba(140,100,255,${.06+energy*.12})`);
     rg.addColorStop(1,`rgba(180,130,255,${.18+energy*.22})`);
-    ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2); ctx2d.fillStyle=rg; ctx2d.fill();
+    ctx2d.beginPath();ctx2d.arc(cx,cy,R,0,Math.PI*2);ctx2d.fillStyle=rg;ctx2d.fill();
   }
   frame();
 }
 
-// ══════════════════════════════════════════════════════════════
-// WebRTC — REAL button, disguised
-//
-// 1. Load the widget as soon as the call screen opens (not on tap)
-// 2. Watch for its button to appear anywhere in the DOM
-// 3. Physically MOVE that real button element into #realBtnSlot
-//    (same element, same click handlers — just relocated)
-// 4. Make it fill the 200x200 circle, transparent, on top of our
-//    pretty "tap to connect" graphic
-// 5. When the user taps, their REAL click lands on Cognigy's REAL
-//    button — satisfies browser trust requirements for mic access
-// 6. Watch for the call to actually start (session events), then
-//    swap the UI to the full in-call controls
-// ══════════════════════════════════════════════════════════════
-let widgetRef = null;
-let realButtonFound = false;
-
-function prepareRTC() {
-  const statusEl = document.getElementById('cst');
-  const slot = document.getElementById('realBtnSlot');
-
-  if(!window.initWebRTCWidget) {
-    statusEl.textContent = 'Widget nicht verfügbar';
-    return;
-  }
-
-  // snapshot existing body children so we can spot the NEW one
-  const existingTopLevel = new Set(Array.from(document.body.children));
-
-  const observer = new MutationObserver(mutations => {
-    if(realButtonFound) return;
-    for(const mutation of mutations) {
-      for(const node of mutation.addedNodes) {
-        if(node.nodeType !== 1) continue;
-        if(node.parentElement === document.body && !existingTopLevel.has(node)) {
-          // This is the widget's root element.
-          const btn = node.querySelector('button, [role="button"]');
-          if(btn) {
-            realButtonFound = true;
-            observer.disconnect();
-            relocateRealButton(node, btn, slot);
-          }
-        }
-      }
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  window.initWebRTCWidget(
-    'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
-  ).then(widget => {
-    widgetRef = widget;
-
-    widget.on('newRTCSession', session => {
-      // The real button worked — call started. Swap to full call UI.
-      document.getElementById('tapOverlay').style.display = 'none';
-      const s = document.getElementById('realBtnSlot');
-      if(s) s.style.display = 'none';
-      document.getElementById('callActions').classList.remove('hidden');
-      statusEl.textContent = 'Verbunden';
-
-      if(session.connection) hookRemoteAudio(session.connection);
-      session.on('peerconnection', evt => hookRemoteAudio(evt.peerconnection));
-      session.on('addstream', evt => hookStream(evt.stream));
-      session.on('ended', () => {
-        statusEl.textContent = 'Anruf beendet';
-        setTimeout(endCall, 1500);
-      });
-    });
-  }).catch(err => {
-    console.error('Widget error:', err);
-    statusEl.textContent = 'Verbindung fehlgeschlagen';
-  });
-
-  // Fallback: if the widget root already existed before observer attached
-  setTimeout(() => {
-    if(realButtonFound) return;
-    Array.from(document.body.children).forEach(node => {
-      if(!existingTopLevel.has(node)) {
-        const btn = node.querySelector('button, [role="button"]');
-        if(btn) {
-          realButtonFound = true;
-          observer.disconnect();
-          relocateRealButton(node, btn, slot);
-        }
-      }
-    });
-  }, 800);
-}
-
-function relocateRealButton(widgetRoot, btn, slot) {
-  // Move the widget root itself off-screen (it has extra chrome we don't want),
-  // but keep the actual <button> element alive by moving IT into our slot.
-  // Moving a DOM node preserves all its event listeners.
-  widgetRoot.style.cssText = 'position:fixed!important;top:-99999px!important;left:-99999px!important;pointer-events:none!important;opacity:0!important;';
-
-  slot.appendChild(btn);
-  btn.style.cssText = 'width:100%!important;height:100%!important;border-radius:50%!important;opacity:0!important;background:transparent!important;border:none!important;cursor:pointer!important;';
-}
-
 function hookRemoteAudio(pc) {
   if(!pc) return;
-  pc.addEventListener('track', evt => {
-    if(evt.track.kind === 'audio') hookStream(new MediaStream([evt.track]));
-  });
-  pc.addEventListener('addstream', evt => hookStream(evt.stream));
+  pc.addEventListener('track', e => { if(e.track.kind==='audio') hookStream(new MediaStream([e.track])); });
+  pc.addEventListener('addstream', e => hookStream(e.stream));
 }
 function hookStream(stream) {
   try {
     unlockAudio();
-    if(!analyser) {
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-    }
-    const src = audioCtx.createMediaStreamSource(stream);
-    src.connect(analyser);
+    if(!analyser){analyser=audioCtx.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=0.8;}
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
   } catch(e) {}
 }
 </script>
