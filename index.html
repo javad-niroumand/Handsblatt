@@ -67,19 +67,22 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .cbg{background:rgba(255,255,255,.15);}
 .cbl{font-size:12px;color:rgba(255,255,255,.6);}
 
-/* ── HIDDEN WIDGET CONTAINER ── 
-   Positioned off-screen so the widget renders & we can click it,
-   but the user never sees it */
-#wc{
-  position:fixed;
-  top:-9999px;
-  left:-9999px;
-  width:1px;
-  height:1px;
-  overflow:hidden;
-  opacity:0;
-  pointer-events:none;
-  z-index:-1;
+/*
+  THE KEY FIX:
+  The Cognigy widget appends itself to document.body.
+  We hide it completely using CSS on the known wrapper class,
+  while still letting it render and receive synthetic clicks.
+*/
+.webrtc_widget_outer_wrapper{
+  position:fixed !important;
+  top:-9999px !important;
+  left:-9999px !important;
+  width:1px !important;
+  height:1px !important;
+  overflow:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+  z-index:-999 !important;
 }
 </style>
 </head>
@@ -177,15 +180,19 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
   </div>
 </div>
 
-<!-- Widget renders here — completely hidden off-screen -->
-<div id="wc"></div>
+<!-- ════════════════════════════════════════════
+     Load the Cognigy widget script.
+     It registers window.initWebRTCWidget globally.
+     We call it ourselves in initRTC() after Accept.
+════════════════════════════════════════════ -->
+<script src="https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js"></script>
 
 <script>
 // ── globals ──
 let audioCtx = null, analyser = null, micSource = null;
 let animFrame = null, muted = false;
 let smoothedLevel = 0, spherePhase = 0;
-let widgetInstance = null;
+let widgetRef = null;
 const canvas = document.getElementById('sphere-canvas');
 const ctx2d   = canvas.getContext('2d');
 
@@ -207,7 +214,7 @@ function updateDate() {
 }
 updateClock(); updateDate(); setInterval(updateClock, 30000);
 
-// ── Audio context unlock ──
+// ── Audio unlock ──
 function unlockAudio() {
   if(audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -244,7 +251,7 @@ function playNotifSound() {
   } catch(e) { console.warn('Audio:', e); }
 }
 
-// ── Show notification after 10 s ──
+// ── Show notification after 10s ──
 setTimeout(() => {
   const n = new Date();
   document.getElementById('ntm').textContent =
@@ -253,19 +260,15 @@ setTimeout(() => {
   playNotifSound();
 }, 10000);
 
-// ── Dismiss banner ──
 function decline() {
   const b = document.getElementById('nb');
   b.style.transition = 'transform .4s ease, opacity .4s ease';
   b.style.transform  = 'translateY(-160px)';
   b.style.opacity    = '0';
-  setTimeout(() => {
-    b.classList.remove('show');
-    b.style.cssText = '';
-  }, 420);
+  setTimeout(() => { b.classList.remove('show'); b.style.cssText = ''; }, 420);
 }
 
-// ── Accept → show sphere → start WebRTC immediately ──
+// ── ACCEPT: open sphere screen, init WebRTC ──
 function accept() {
   decline();
   unlockAudio(); // must be inside user-gesture handler
@@ -276,29 +279,26 @@ function accept() {
   }, 450);
 }
 
-// ── End call ──
 function endCall() {
   document.getElementById('co').classList.remove('active');
   document.getElementById('cst').textContent = 'Verbinden…';
   if(animFrame)  { cancelAnimationFrame(animFrame); animFrame = null; }
   if(micSource)  { try { micSource.disconnect(); } catch(e){} micSource = null; }
-  // hang up via widget if possible
-  if(widgetInstance && widgetInstance.hangup) widgetInstance.hangup();
-  if(widgetInstance && widgetInstance.endCall) widgetInstance.endCall();
+  // hang up via widget
+  try {
+    if(widgetRef) {
+      if(typeof widgetRef.endCall === 'function') widgetRef.endCall();
+      if(typeof widgetRef.hangup  === 'function') widgetRef.hangup();
+    }
+  } catch(e) {}
 }
 
 function toggleMute() {
   muted = !muted;
-  if(micSource) {
-    micSource.disconnect();
-    if(!muted && analyser) micSource.connect(analyser);
-  }
   document.getElementById('muteIcon').className = muted ? 'ti ti-microphone-off' : 'ti ti-microphone';
-  document.getElementById('muteBtn').style.background = muted
-    ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.15)';
+  document.getElementById('muteBtn').style.background = muted ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.15)';
   document.getElementById('muteLabel').textContent = muted ? 'Ton an' : 'Stumm';
 }
-
 function toggleSpeaker() {
   const btn = document.getElementById('spkBtn');
   const on  = btn.dataset.on === '1';
@@ -306,7 +306,9 @@ function toggleSpeaker() {
   btn.style.background = on ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.35)';
 }
 
-// ── Sphere renderer ──
+// ══════════════════════════════════════════
+// SPHERE
+// ══════════════════════════════════════════
 function getAudioLevel() {
   if(!analyser) return 0;
   const d = new Uint8Array(analyser.frequencyBinCount);
@@ -341,21 +343,18 @@ function renderSphere() {
     smoothedLevel += (raw - smoothedLevel) * 0.12;
     const energy = smoothedLevel + 0.04*Math.sin(time*1.2) + 0.02;
     ctx2d.clearRect(0,0,W,H);
-    // glow
     const gr = ctx2d.createRadialGradient(cx,cy,R*.3,cx,cy,R+10+energy*30);
     gr.addColorStop(0,`rgba(120,80,255,${0.18+energy*.3})`);
     gr.addColorStop(.5,`rgba(60,30,180,${0.10+energy*.15})`);
     gr.addColorStop(1,'rgba(0,0,0,0)');
     ctx2d.beginPath(); ctx2d.arc(cx,cy,R+10+energy*30,0,Math.PI*2);
     ctx2d.fillStyle=gr; ctx2d.fill();
-    // base
     const bg = ctx2d.createRadialGradient(cx-20,cy-24,4,cx,cy,R);
     bg.addColorStop(0,`rgba(160,120,255,${.55+energy*.25})`);
     bg.addColorStop(.45,`rgba(70,40,200,${.70+energy*.15})`);
     bg.addColorStop(1,`rgba(10,5,60,.95)`);
     ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2);
     ctx2d.fillStyle=bg; ctx2d.fill();
-    // lines (clipped)
     ctx2d.save(); ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2); ctx2d.clip();
     for(let i=0;i<28;i++){
       const lat=(i/28-.5)*Math.PI, ry=Math.cos(lat)*R, yOff=Math.sin(lat)*R;
@@ -382,8 +381,7 @@ function renderSphere() {
       ctx2d.strokeStyle=`rgba(200,160,255,${.05+energy*.18})`;
       ctx2d.lineWidth=.7; ctx2d.stroke();
     }
-    // core
-    const cr=( 12+energy*28)*(1+.08*Math.sin(time*4));
+    const cr=(12+energy*28)*(1+.08*Math.sin(time*4));
     const cg=ctx2d.createRadialGradient(cx,cy,0,cx,cy,cr);
     cg.addColorStop(0,`rgba(240,220,255,${.6+energy*.4})`);
     cg.addColorStop(.5,`rgba(160,100,255,${.3+energy*.3})`);
@@ -391,11 +389,9 @@ function renderSphere() {
     ctx2d.beginPath(); ctx2d.arc(cx,cy,cr,0,Math.PI*2);
     ctx2d.fillStyle=cg; ctx2d.fill();
     ctx2d.restore();
-    // specular
     const sg=ctx2d.createRadialGradient(cx-22,cy-26,2,cx-18,cy-20,R*.55);
     sg.addColorStop(0,'rgba(255,255,255,.30)'); sg.addColorStop(.5,'rgba(255,255,255,.06)'); sg.addColorStop(1,'rgba(255,255,255,0)');
     ctx2d.beginPath(); ctx2d.arc(cx,cy,R,0,Math.PI*2); ctx2d.fillStyle=sg; ctx2d.fill();
-    // rim
     const rg=ctx2d.createRadialGradient(cx,cy,R*.75,cx,cy,R);
     rg.addColorStop(0,'rgba(120,80,255,0)');
     rg.addColorStop(.7,`rgba(140,100,255,${.06+energy*.12})`);
@@ -405,122 +401,133 @@ function renderSphere() {
   frame();
 }
 
-// ══════════════════════════════════════════════════
-// WebRTC — load widget off-screen, auto-click its
-// call button so the call starts without user seeing
-// the widget UI at all.
-// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════
+// WebRTC — the real fix
+//
+// HOW IT WORKS (from reading the source):
+// 1. initWebRTCWidget() renders the widget into document.body
+//    as a fixed-position div with class "webrtc_widget_outer_wrapper"
+// 2. Our CSS hides that class entirely (top:-9999px etc.)
+// 3. The widget's call button has data-testid="cognigy-call-button"
+// 4. We use a MutationObserver to watch document.body for that button,
+//    then dispatch a real MouseEvent on it — browsers treat this as
+//    a user gesture because we're still inside the accept() click chain
+// ══════════════════════════════════════════
 function initRTC() {
   const statusEl = document.getElementById('cst');
   statusEl.textContent = 'Verbinden…';
 
-  // Load the Cognigy widget script
-  const sc = document.createElement('script');
-  sc.src = 'https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js';
+  if(!window.initWebRTCWidget) {
+    statusEl.textContent = 'Widget nicht verfügbar';
+    return;
+  }
 
-  sc.onload = () => {
-    if(!window.initWebRTCWidget) {
-      statusEl.textContent = 'Widget nicht gefunden';
-      return;
-    }
+  window.initWebRTCWidget(
+    'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
+  ).then(widget => {
+    widgetRef = widget;
 
-    window.initWebRTCWidget(
-      'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
-    ).then(widget => {
-      widgetInstance = widget;
+    // ── Watch for the call button to appear, then click it ──
+    let clicked = false;
 
-      // ── Auto-click strategy ──
-      // The widget injects a button into #wc (which is hidden off-screen).
-      // We poll until the button appears, then click it programmatically.
-      // This fires within the same user-gesture chain (accept() → initRTC()),
-      // so browsers allow microphone access.
-      let attempts = 0;
-      const MAX = 40; // 4 seconds max
+    function tryClick() {
+      if(clicked) return;
 
-      function tryAutoClick() {
-        attempts++;
+      // Primary selector from the Cognigy source code
+      const btn = document.querySelector('[data-testid="cognigy-call-button"]')
+                || document.querySelector('.webrtc_widget_call_button')
+                || document.querySelector('.webrtc_widget_outer_wrapper button');
 
-        // Strategy 1: widget exposes a direct method
-        if(widget.startCall)  { widget.startCall();  onCallStarted(); return; }
-        if(widget.call)       { widget.call();        onCallStarted(); return; }
-        if(widget.connect)    { widget.connect();     onCallStarted(); return; }
-        if(widget.initiateCall){ widget.initiateCall(); onCallStarted(); return; }
-
-        // Strategy 2: find and click the button the widget rendered
-        const wc = document.getElementById('wc');
-        const btn = wc
-          ? (wc.querySelector('button') ||
-             wc.querySelector('[role="button"]') ||
-             wc.querySelector('.call-button') ||
-             wc.querySelector('[class*="call"]') ||
-             wc.querySelector('[class*="start"]') ||
-             wc.querySelector('[class*="btn"]'))
-          : null;
-
-        if(btn) { btn.click(); onCallStarted(); return; }
-
-        // Strategy 3: check shadow DOM
-        const all = document.querySelectorAll('*');
-        for(const el of all) {
-          if(el.shadowRoot) {
-            const sb = el.shadowRoot.querySelector('button') ||
-                       el.shadowRoot.querySelector('[role="button"]');
-            if(sb) { sb.click(); onCallStarted(); return; }
-          }
-        }
-
-        // Keep trying
-        if(attempts < MAX) {
-          setTimeout(tryAutoClick, 100);
-        } else {
-          statusEl.textContent = 'Bitte Mikrofon erlauben';
-        }
+      if(btn) {
+        clicked = true;
+        observer.disconnect();
+        // Dispatch a real, trusted-ish MouseEvent
+        btn.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
+        statusEl.textContent = 'Verbunden';
+        return;
       }
 
-      // Give widget 200ms to render its DOM, then start clicking
-      setTimeout(tryAutoClick, 200);
+      // Also try shadow DOM
+      document.querySelectorAll('*').forEach(el => {
+        if(el.shadowRoot && !clicked) {
+          const sb = el.shadowRoot.querySelector('[data-testid="cognigy-call-button"]')
+                   || el.shadowRoot.querySelector('button');
+          if(sb) {
+            clicked = true;
+            observer.disconnect();
+            sb.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
+            statusEl.textContent = 'Verbunden';
+          }
+        }
+      });
+    }
 
-      // ── Listen for session events ──
-      widget.on('newRTCSession', session => {
-        onCallStarted();
+    // MutationObserver watches for new DOM nodes from the widget
+    const observer = new MutationObserver(() => tryClick());
+    observer.observe(document.body, {childList:true, subtree:true});
 
-        // Hook remote audio into sphere analyser
-        session.on('addstream', e => {
-          try {
-            unlockAudio();
-            if(!analyser) {
-              analyser = audioCtx.createAnalyser();
-              analyser.fftSize = 256;
-              analyser.smoothingTimeConstant = 0.8;
-            }
-            const remote = audioCtx.createMediaStreamSource(e.stream);
-            remote.connect(analyser);
-          } catch(err) {}
-        });
+    // Also try immediately and at short intervals as fallback
+    tryClick();
+    const poll = setInterval(() => {
+      if(clicked) { clearInterval(poll); return; }
+      tryClick();
+    }, 100);
+    // Stop polling after 8 seconds
+    setTimeout(() => {
+      clearInterval(poll);
+      observer.disconnect();
+      if(!clicked) statusEl.textContent = 'Bitte Mikrofon erlauben';
+    }, 8000);
 
-        session.on('newInfo', ev => {
-          try { const d = JSON.parse(ev.request.body); console.log('AVA:', d); }
-          catch(e) {}
-        });
+    // ── Session events ──
+    widget.on('newRTCSession', session => {
+      statusEl.textContent = 'Gespräch läuft';
 
-        session.on('ended', () => {
-          statusEl.textContent = 'Anruf beendet';
-          setTimeout(endCall, 1500);
-        });
+      // Feed remote audio into sphere analyser
+      if(session.connection) {
+        hookRemoteAudio(session.connection);
+      }
+      session.on('peerconnection', evt => hookRemoteAudio(evt.peerconnection));
+      session.on('addstream', evt => hookStream(evt.stream));
+
+      session.on('newInfo', ev => {
+        try {
+          const d = JSON.parse(ev.request.body);
+          console.log('AVA data:', d);
+        } catch(e) {}
       });
 
-    }).catch(err => {
-      console.error('WebRTC init error:', err);
-      statusEl.textContent = 'Verbindung fehlgeschlagen';
+      session.on('ended', () => {
+        statusEl.textContent = 'Anruf beendet';
+        setTimeout(endCall, 1500);
+      });
     });
-  };
 
-  sc.onerror = () => { statusEl.textContent = 'Script-Ladefehler'; };
-  document.head.appendChild(sc);
+  }).catch(err => {
+    console.error('WebRTC init error:', err);
+    document.getElementById('cst').textContent = 'Verbindung fehlgeschlagen';
+  });
 }
 
-function onCallStarted() {
-  document.getElementById('cst').textContent = 'Verbunden';
+function hookRemoteAudio(pc) {
+  if(!pc) return;
+  pc.addEventListener('track', evt => {
+    if(evt.track.kind === 'audio') hookStream(new MediaStream([evt.track]));
+  });
+  pc.addEventListener('addstream', evt => hookStream(evt.stream));
+}
+
+function hookStream(stream) {
+  try {
+    unlockAudio();
+    if(!analyser) {
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+    }
+    const src = audioCtx.createMediaStreamSource(stream);
+    src.connect(analyser);
+  } catch(e) {}
 }
 </script>
 </body>
