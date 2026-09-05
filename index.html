@@ -27,8 +27,6 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .dock{background:rgba(255,255,255,.15);backdrop-filter:blur(20px);border-radius:26px;margin:0 16px;padding:12px 16px;display:flex;justify-content:space-around;align-items:center;}
 .di{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
 .hi{width:134px;height:5px;background:rgba(255,255,255,.35);border-radius:3px;margin:8px auto 0;display:block;}
-
-/* ── NOTIFICATION ── */
 #nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;background:rgba(28,28,30,.92);backdrop-filter:blur(30px);padding:14px 16px;transform:translateY(-160px);opacity:0;transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .55s ease;pointer-events:none;font-family:-apple-system,sans-serif;}
 #nb.show{transform:translateY(0);opacity:1;pointer-events:all;}
 .nt{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
@@ -42,14 +40,10 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .nbtn{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;}
 .bdec{background:rgba(255,255,255,.12);color:#fff;}
 .bacc{background:#34c759;color:#fff;}
-
-/* ── CALL OVERLAY ── */
 #co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;border-radius:52px;font-family:-apple-system,sans-serif;}
 #co.active{display:flex;}
 .caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:6px;text-align:center;}
 .caller-status{font-size:15px;color:rgba(255,255,255,.5);text-align:center;}
-
-/* ── SPHERE ── */
 .sphere-wrap{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;}
 #sphere-canvas{border-radius:50%;display:block;}
 .ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.06);animation:ringPulse 3s ease-in-out infinite;}
@@ -57,8 +51,6 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .ring:nth-child(2){width:250px;height:250px;animation-delay:.5s;}
 .ring:nth-child(3){width:280px;height:280px;animation-delay:1s;}
 @keyframes ringPulse{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:.08;transform:scale(1.03);}}
-
-/* ── CALL ACTIONS ── */
 .cac{display:flex;justify-content:space-around;width:100%;align-items:center;}
 .cbw{text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;}
 .cbi{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
@@ -66,33 +58,14 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .cbr{background:#ff3b30;}
 .cbg{background:rgba(255,255,255,.15);}
 .cbl{font-size:12px;color:rgba(255,255,255,.6);}
-
-/*
-  THE KEY FIX:
-  The Cognigy widget appends itself to document.body.
-  We hide it completely using CSS on the known wrapper class,
-  while still letting it render and receive synthetic clicks.
-*/
-.webrtc_widget_outer_wrapper{
-  position:fixed !important;
-  top:-9999px !important;
-  left:-9999px !important;
-  width:1px !important;
-  height:1px !important;
-  overflow:hidden !important;
-  opacity:0 !important;
-  pointer-events:none !important;
-  z-index:-999 !important;
-}
 </style>
 </head>
 <body>
 
-<div class="shell">
+<div class="shell" id="myShell">
   <div class="notch"></div>
   <div class="screen">
     <div class="wp"></div>
-
     <div class="sb">
       <span id="clk">9:41</span>
       <div class="sb-r">
@@ -106,7 +79,6 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
         <i class="ti ti-battery-2" style="font-size:16px;color:#fff;"></i>
       </div>
     </div>
-
     <div class="hc">
       <div class="dw">
         <div class="dd" id="dateLine">Fr. 4. Sept.</div>
@@ -134,7 +106,6 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
       <div class="hi"></div>
     </div>
 
-    <!-- Notification -->
     <div id="nb">
       <div class="nt">
         <div class="nai"><i class="ti ti-sparkles"></i></div>
@@ -149,7 +120,6 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
       </div>
     </div>
 
-    <!-- Call screen -->
     <div id="co">
       <div>
         <div class="caller-name">AVA</div>
@@ -176,15 +146,9 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════
-     Load the Cognigy widget script.
-     It registers window.initWebRTCWidget globally.
-     We call it ourselves in initRTC() after Accept.
-════════════════════════════════════════════ -->
 <script src="https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js"></script>
 
 <script>
@@ -192,9 +156,8 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 let audioCtx = null, analyser = null, micSource = null;
 let animFrame = null, muted = false;
 let smoothedLevel = 0, spherePhase = 0;
-let widgetRef = null;
 const canvas = document.getElementById('sphere-canvas');
-const ctx2d   = canvas.getContext('2d');
+const ctx2d  = canvas.getContext('2d');
 
 // ── Clock / Date ──
 function updateClock() {
@@ -214,7 +177,6 @@ function updateDate() {
 }
 updateClock(); updateDate(); setInterval(updateClock, 30000);
 
-// ── Audio unlock ──
 function unlockAudio() {
   if(audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -223,7 +185,6 @@ function unlockAudio() {
   document.addEventListener(e, unlockAudio, {once:true})
 );
 
-// ── iOS tri-tone notification sound ──
 function playNotifSound() {
   try {
     unlockAudio();
@@ -248,10 +209,9 @@ function playNotifSound() {
       gain.gain.linearRampToValueAtTime(0, t+dur);
       osc.start(t); osc.stop(t+dur+0.01);
     });
-  } catch(e) { console.warn('Audio:', e); }
+  } catch(e) {}
 }
 
-// ── Show notification after 10s ──
 setTimeout(() => {
   const n = new Date();
   document.getElementById('ntm').textContent =
@@ -268,10 +228,9 @@ function decline() {
   setTimeout(() => { b.classList.remove('show'); b.style.cssText = ''; }, 420);
 }
 
-// ── ACCEPT: open sphere screen, init WebRTC ──
 function accept() {
   decline();
-  unlockAudio(); // must be inside user-gesture handler
+  unlockAudio();
   setTimeout(() => {
     document.getElementById('co').classList.add('active');
     startSphere();
@@ -282,15 +241,8 @@ function accept() {
 function endCall() {
   document.getElementById('co').classList.remove('active');
   document.getElementById('cst').textContent = 'Verbinden…';
-  if(animFrame)  { cancelAnimationFrame(animFrame); animFrame = null; }
-  if(micSource)  { try { micSource.disconnect(); } catch(e){} micSource = null; }
-  // hang up via widget
-  try {
-    if(widgetRef) {
-      if(typeof widgetRef.endCall === 'function') widgetRef.endCall();
-      if(typeof widgetRef.hangup  === 'function') widgetRef.hangup();
-    }
-  } catch(e) {}
+  if(animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  if(micSource) { try { micSource.disconnect(); } catch(e){} micSource = null; }
 }
 
 function toggleMute() {
@@ -300,15 +252,13 @@ function toggleMute() {
   document.getElementById('muteLabel').textContent = muted ? 'Ton an' : 'Stumm';
 }
 function toggleSpeaker() {
-  const btn = document.getElementById('spkBtn');
-  const on  = btn.dataset.on === '1';
-  btn.dataset.on = on ? '0' : '1';
-  btn.style.background = on ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.35)';
+  const b = document.getElementById('spkBtn');
+  const on = b.dataset.on === '1';
+  b.dataset.on = on ? '0' : '1';
+  b.style.background = on ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.35)';
 }
 
-// ══════════════════════════════════════════
-// SPHERE
-// ══════════════════════════════════════════
+// ── Sphere ──
 function getAudioLevel() {
   if(!analyser) return 0;
   const d = new Uint8Array(analyser.frequencyBinCount);
@@ -316,7 +266,6 @@ function getAudioLevel() {
   let s = 0; for(let i=0;i<d.length;i++) s+=d[i];
   return s / d.length / 255;
 }
-
 function startSphere() {
   if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia({audio:true,video:false})
@@ -332,7 +281,6 @@ function startSphere() {
       .catch(() => renderSphere());
   } else { renderSphere(); }
 }
-
 function renderSphere() {
   const W=180,H=180,cx=90,cy=90,R=72;
   let time=0;
@@ -382,12 +330,12 @@ function renderSphere() {
       ctx2d.lineWidth=.7; ctx2d.stroke();
     }
     const cr=(12+energy*28)*(1+.08*Math.sin(time*4));
-    const cg=ctx2d.createRadialGradient(cx,cy,0,cx,cy,cr);
-    cg.addColorStop(0,`rgba(240,220,255,${.6+energy*.4})`);
-    cg.addColorStop(.5,`rgba(160,100,255,${.3+energy*.3})`);
-    cg.addColorStop(1,'rgba(80,40,200,0)');
+    const cg2=ctx2d.createRadialGradient(cx,cy,0,cx,cy,cr);
+    cg2.addColorStop(0,`rgba(240,220,255,${.6+energy*.4})`);
+    cg2.addColorStop(.5,`rgba(160,100,255,${.3+energy*.3})`);
+    cg2.addColorStop(1,'rgba(80,40,200,0)');
     ctx2d.beginPath(); ctx2d.arc(cx,cy,cr,0,Math.PI*2);
-    ctx2d.fillStyle=cg; ctx2d.fill();
+    ctx2d.fillStyle=cg2; ctx2d.fill();
     ctx2d.restore();
     const sg=ctx2d.createRadialGradient(cx-22,cy-26,2,cx-18,cy-20,R*.55);
     sg.addColorStop(0,'rgba(255,255,255,.30)'); sg.addColorStop(.5,'rgba(255,255,255,.06)'); sg.addColorStop(1,'rgba(255,255,255,0)');
@@ -401,133 +349,152 @@ function renderSphere() {
   frame();
 }
 
-// ══════════════════════════════════════════
-// WebRTC — the real fix
+// ══════════════════════════════════════════════════════════════
+// WebRTC — NUCLEAR APPROACH
 //
-// HOW IT WORKS (from reading the source):
-// 1. initWebRTCWidget() renders the widget into document.body
-//    as a fixed-position div with class "webrtc_widget_outer_wrapper"
-// 2. Our CSS hides that class entirely (top:-9999px etc.)
-// 3. The widget's call button has data-testid="cognigy-call-button"
-// 4. We use a MutationObserver to watch document.body for that button,
-//    then dispatch a real MouseEvent on it — browsers treat this as
-//    a user gesture because we're still inside the accept() click chain
-// ══════════════════════════════════════════
+// Strategy:
+// 1. Snapshot every element in <body> BEFORE calling initWebRTCWidget
+// 2. After widget inits, find ALL new elements it added
+// 3. Hide every new element with inline style (beats any CSS)
+// 4. Find ANY clickable element inside them and .click() it
+// 5. Set up a MutationObserver to hide + click anything new
+// 6. Log everything to console for debugging
+// ══════════════════════════════════════════════════════════════
 function initRTC() {
   const statusEl = document.getElementById('cst');
   statusEl.textContent = 'Verbinden…';
 
   if(!window.initWebRTCWidget) {
     statusEl.textContent = 'Widget nicht verfügbar';
+    console.error('[AVA] window.initWebRTCWidget not found');
     return;
   }
+
+  // Step 1: snapshot all current body children
+  const existingElements = new Set();
+  document.body.querySelectorAll('*').forEach(el => existingElements.add(el));
+  const existingTopLevel = new Set(Array.from(document.body.children));
+
+  console.log('[AVA] Existing body children:', existingTopLevel.size);
+
+  // Step 2: Set up MutationObserver BEFORE calling init
+  let autoClicked = false;
+
+  function hideElement(el) {
+    el.style.cssText = 'position:fixed!important;top:-99999px!important;left:-99999px!important;width:0!important;height:0!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;visibility:hidden!important;z-index:-99999!important;';
+  }
+
+  function findAndClickButton(root) {
+    if(autoClicked) return;
+    // Find ANY clickable thing
+    const candidates = root.querySelectorAll('button, [role="button"], a, [onclick], input[type="button"], input[type="submit"], div[tabindex], span[tabindex]');
+    console.log('[AVA] Found', candidates.length, 'clickable elements in widget');
+
+    for(const btn of candidates) {
+      console.log('[AVA] Candidate:', btn.tagName, btn.className, btn.textContent.trim().substring(0,50));
+    }
+
+    if(candidates.length > 0) {
+      autoClicked = true;
+      const btn = candidates[0];
+      console.log('[AVA] AUTO-CLICKING:', btn.tagName, btn.className, btn.textContent.trim().substring(0,30));
+      btn.style.pointerEvents = 'auto';
+      btn.click();
+      statusEl.textContent = 'Verbunden';
+    }
+  }
+
+  const observer = new MutationObserver(mutations => {
+    for(const mutation of mutations) {
+      for(const node of mutation.addedNodes) {
+        if(node.nodeType !== 1) continue; // skip text nodes
+        // Is this a NEW top-level element the widget added?
+        if(node.parentElement === document.body && !existingTopLevel.has(node)) {
+          console.log('[AVA] NEW widget element detected:', node.tagName, node.className, node.id);
+          // Log its full HTML for debugging
+          console.log('[AVA] Widget HTML:', node.outerHTML.substring(0,500));
+          // Hide it
+          hideElement(node);
+          // Try to click its button
+          setTimeout(() => findAndClickButton(node), 100);
+          setTimeout(() => findAndClickButton(node), 300);
+          setTimeout(() => findAndClickButton(node), 600);
+          setTimeout(() => findAndClickButton(node), 1000);
+          setTimeout(() => findAndClickButton(node), 2000);
+        }
+        // Also catch elements added deeper in the tree
+        if(!existingElements.has(node) && !document.getElementById('myShell').contains(node)) {
+          // This is a widget element added somewhere
+          if(node.matches && (node.matches('button') || node.matches('[role="button"]'))) {
+            console.log('[AVA] Button appeared in subtree:', node.tagName, node.className, node.textContent.trim().substring(0,30));
+            if(!autoClicked) {
+              autoClicked = true;
+              node.style.pointerEvents = 'auto';
+              node.click();
+              statusEl.textContent = 'Verbunden';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Step 3: Call the widget
+  console.log('[AVA] Calling initWebRTCWidget...');
 
   window.initWebRTCWidget(
     'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
   ).then(widget => {
-    widgetRef = widget;
+    console.log('[AVA] Widget initialized. Methods:', Object.keys(widget));
+    console.log('[AVA] Widget prototype:', Object.getOwnPropertyNames(Object.getPrototypeOf(widget)));
 
-    // ── Watch for the call button to appear, then click it ──
-    let clicked = false;
+    // Log ALL methods on the widget to find a direct call method
+    for(const key in widget) {
+      console.log('[AVA] widget.' + key, '=', typeof widget[key]);
+    }
 
-    function tryClick() {
-      if(clicked) return;
-
-      // Primary selector from the Cognigy source code
-      const btn = document.querySelector('[data-testid="cognigy-call-button"]')
-                || document.querySelector('.webrtc_widget_call_button')
-                || document.querySelector('.webrtc_widget_outer_wrapper button');
-
-      if(btn) {
-        clicked = true;
-        observer.disconnect();
-        // Dispatch a real, trusted-ish MouseEvent
-        btn.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
-        statusEl.textContent = 'Verbunden';
-        return;
+    // Try every possible direct-call method
+    const callMethods = ['startCall','call','connect','initiateCall','start','makeCall','begin','dial','open'];
+    for(const m of callMethods) {
+      if(typeof widget[m] === 'function') {
+        console.log('[AVA] Found direct method:', m, '— calling it');
+        try { widget[m](); autoClicked = true; statusEl.textContent = 'Verbunden'; } catch(e) { console.warn('[AVA]', m, 'failed:', e); }
+        break;
       }
+    }
 
-      // Also try shadow DOM
-      document.querySelectorAll('*').forEach(el => {
-        if(el.shadowRoot && !clicked) {
-          const sb = el.shadowRoot.querySelector('[data-testid="cognigy-call-button"]')
-                   || el.shadowRoot.querySelector('button');
-          if(sb) {
-            clicked = true;
-            observer.disconnect();
-            sb.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
-            statusEl.textContent = 'Verbunden';
-          }
+    // Also do a brute-force scan of body for new elements
+    setTimeout(() => {
+      if(autoClicked) return;
+      console.log('[AVA] Fallback: scanning entire body for new elements...');
+      Array.from(document.body.children).forEach(el => {
+        if(!existingTopLevel.has(el)) {
+          console.log('[AVA] Fallback found:', el.tagName, el.className, el.id);
+          hideElement(el);
+          findAndClickButton(el);
         }
       });
-    }
+    }, 500);
 
-    // MutationObserver watches for new DOM nodes from the widget
-    const observer = new MutationObserver(() => tryClick());
-    observer.observe(document.body, {childList:true, subtree:true});
-
-    // Also try immediately and at short intervals as fallback
-    tryClick();
-    const poll = setInterval(() => {
-      if(clicked) { clearInterval(poll); return; }
-      tryClick();
-    }, 100);
-    // Stop polling after 8 seconds
-    setTimeout(() => {
-      clearInterval(poll);
-      observer.disconnect();
-      if(!clicked) statusEl.textContent = 'Bitte Mikrofon erlauben';
-    }, 8000);
-
-    // ── Session events ──
-    widget.on('newRTCSession', session => {
-      statusEl.textContent = 'Gespräch läuft';
-
-      // Feed remote audio into sphere analyser
-      if(session.connection) {
-        hookRemoteAudio(session.connection);
-      }
-      session.on('peerconnection', evt => hookRemoteAudio(evt.peerconnection));
-      session.on('addstream', evt => hookStream(evt.stream));
-
-      session.on('newInfo', ev => {
-        try {
-          const d = JSON.parse(ev.request.body);
-          console.log('AVA data:', d);
-        } catch(e) {}
+    // Keep scanning every second for 10s
+    let scanCount = 0;
+    const scanInterval = setInterval(() => {
+      scanCount++;
+      if(autoClicked || scanCount > 10) { clearInterval(scanInterval); observer.disconnect(); return; }
+      Array.from(document.body.children).forEach(el => {
+        if(!existingTopLevel.has(el)) {
+          hideElement(el);
+          findAndClickButton(el);
+        }
       });
-
-      session.on('ended', () => {
-        statusEl.textContent = 'Anruf beendet';
-        setTimeout(endCall, 1500);
-      });
-    });
+    }, 1000);
 
   }).catch(err => {
-    console.error('WebRTC init error:', err);
-    document.getElementById('cst').textContent = 'Verbindung fehlgeschlagen';
+    console.error('[AVA] Widget error:', err);
+    statusEl.textContent = 'Verbindung fehlgeschlagen';
   });
-}
-
-function hookRemoteAudio(pc) {
-  if(!pc) return;
-  pc.addEventListener('track', evt => {
-    if(evt.track.kind === 'audio') hookStream(new MediaStream([evt.track]));
-  });
-  pc.addEventListener('addstream', evt => hookStream(evt.stream));
-}
-
-function hookStream(stream) {
-  try {
-    unlockAudio();
-    if(!analyser) {
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-    }
-    const src = audioCtx.createMediaStreamSource(stream);
-    src.connect(analyser);
-  } catch(e) {}
 }
 </script>
 </body>
