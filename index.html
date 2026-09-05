@@ -1,8 +1,14 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVA</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-#pw{display:flex;justify-content:center;padding:2rem 0;min-height:680px;}
-.shell{width:375px;height:812px;background:#000;border-radius:52px;box-shadow:0 0 0 2px #3a3a3c,0 0 0 5px #1c1c1e,0 30px 80px rgba(0,0,0,.5);position:relative;overflow:hidden;flex-shrink:0;}
+body{background:#000;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:2rem 0;}
+.shell{width:375px;height:812px;background:#000;border-radius:52px;box-shadow:0 0 0 2px #3a3a3c,0 0 0 5px #1c1c1e,0 30px 80px rgba(0,0,0,.6);position:relative;overflow:hidden;flex-shrink:0;}
 .screen{position:absolute;inset:0;border-radius:52px;overflow:hidden;display:flex;flex-direction:column;}
 .wp{position:absolute;inset:0;background:url('iClarified-iOS27-Celosia-Color-LockScreen.jpeg') center/cover no-repeat;z-index:0;}
 .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:34px;background:#000;border-radius:0 0 22px 22px;z-index:50;}
@@ -11,33 +17,19 @@
 .bars{display:flex;align-items:flex-end;gap:2px;}
 .bar{width:3px;background:#fff;border-radius:1px;}
 .hc{position:relative;z-index:5;flex:1;display:flex;flex-direction:column;padding:0 0 20px;}
-.dw{text-align:center;padding:26px 0 10px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,Helvetica,Arial,sans-serif;}
+.dw{text-align:center;padding:26px 0 10px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;}
 .dd{font-size:29px;font-weight:600;letter-spacing:.1px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.3);margin-bottom:4px;}
-.dn{
-  font-size:108px;font-weight:600;line-height:1;letter-spacing:-2px;
-  color:transparent;
-  background-image:
-    linear-gradient(135deg,rgba(255,255,255,.9) 0%,rgba(255,255,255,.3) 10%,rgba(255,255,255,.08) 28%,rgba(255,255,255,.4) 52%,rgba(255,255,255,.1) 100%),
-    url('iClarified-iOS27-Celosia-Color-LockScreen.jpeg');
-  background-size:375px 814.75px,375px 814.75px;
-  background-repeat:no-repeat;
-  background-position:0 0,0 -104.375px;
-  -webkit-background-clip:text;background-clip:text;
-  -webkit-text-stroke:0.6px rgba(255,255,255,.55);
-  filter:brightness(1.8) saturate(1.5) contrast(1.15) blur(0.4px);
-  text-shadow:0 3px 8px rgba(0,0,0,.45);
-}
+.dn{font-size:108px;font-weight:600;line-height:1;letter-spacing:-2px;color:transparent;background-image:linear-gradient(135deg,rgba(255,255,255,.9) 0%,rgba(255,255,255,.3) 10%,rgba(255,255,255,.08) 28%,rgba(255,255,255,.4) 52%,rgba(255,255,255,.1) 100%),url('iClarified-iOS27-Celosia-Color-LockScreen.jpeg');background-size:375px 814.75px,375px 814.75px;background-repeat:no-repeat;background-position:0 0,0 -104.375px;-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:0.6px rgba(255,255,255,.55);filter:brightness(1.8) saturate(1.5) contrast(1.15) blur(0.4px);text-shadow:0 3px 8px rgba(0,0,0,.45);}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);align-content:start;gap:18px 10px;padding:16px 22px;flex:1;}
 .ai{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;}
 .ic{width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ic i{font-size:28px;color:#fff;}
 .al{font-size:11px;color:#fff;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.6);font-weight:400;font-family:-apple-system,sans-serif;}
-.dock{background:rgba(255,255,255,.15);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:26px;margin:0 16px;padding:12px 16px;display:flex;justify-content:space-around;align-items:center;}
-.di{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.di i{font-size:30px;color:#fff;}
+.dock{background:rgba(255,255,255,.15);backdrop-filter:blur(20px);border-radius:26px;margin:0 16px;padding:12px 16px;display:flex;justify-content:space-around;align-items:center;}
+.di{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
 .hi{width:134px;height:5px;background:rgba(255,255,255,.35);border-radius:3px;margin:8px auto 0;display:block;}
 
-#nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;background:rgba(28,28,30,.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);padding:14px 16px;transform:translateY(-130px);opacity:0;transition:all .55s cubic-bezier(.34,1.56,.64,1);pointer-events:none;font-family:-apple-system,sans-serif;}
+/* ── NOTIFICATION ── */
+#nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;background:rgba(28,28,30,.92);backdrop-filter:blur(30px);padding:14px 16px;transform:translateY(-160px);opacity:0;transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .55s ease;pointer-events:none;font-family:-apple-system,sans-serif;}
 #nb.show{transform:translateY(0);opacity:1;pointer-events:all;}
 .nt{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .nai{width:32px;height:32px;border-radius:8px;background:#451DC7;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -47,32 +39,44 @@
 .ntit{font-size:16px;font-weight:600;color:#fff;margin-bottom:3px;}
 .nbod{font-size:14px;color:rgba(255,255,255,.7);line-height:1.4;}
 .nact{display:flex;gap:8px;margin-top:12px;}
-.nbtn{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;transition:opacity .15s;}
+.nbtn{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;}
 .bdec{background:rgba(255,255,255,.12);color:#fff;}
 .bacc{background:#34c759;color:#fff;}
-.nbtn:active{opacity:.7;}
 
-#co{position:absolute;inset:0;z-index:300;background:linear-gradient(170deg,#1a5c2e,#0d3320 50%,#051a10);display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:60px 30px 50px;border-radius:52px;font-family:-apple-system,sans-serif;}
+/* ── CALL OVERLAY ── */
+#co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;border-radius:52px;font-family:-apple-system,sans-serif;}
 #co.active{display:flex;}
-.cav{width:100px;height:100px;border-radius:50%;background:#1a5c2e;border:3px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;position:relative;}
-.cav i{font-size:48px;color:#fff;}
-.cn{font-size:34px;font-weight:300;color:#fff;margin-bottom:6px;letter-spacing:-.5px;}
-.cs{font-size:16px;color:rgba(255,255,255,.6);}
-.cac{display:flex;justify-content:space-around;width:100%;align-items:center;}
-.cbw{text-align:center;cursor:pointer;}
-.cbi{width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:6px;}
-.cbi i{font-size:28px;color:#fff;}
-.cbr{background:#ff3b30;}
-.cbl{font-size:12px;color:rgba(255,255,255,.7);}
-@keyframes pr{0%{transform:scale(1);opacity:.6;}100%{transform:scale(1.5);opacity:0;}}
-.pw2{position:relative;width:100px;height:100px;margin-bottom:16px;}
-.pr{position:absolute;inset:-10px;border-radius:50%;border:2px solid rgba(52,199,89,.5);animation:pr 1.8s ease-out infinite;}
-.pr:nth-child(2){animation-delay:.6s;}
-#wc{position:absolute;bottom:150px;left:50%;transform:translateX(-50%);width:280px;}
-</style>
 
-<div id="pw">
-<div class="shell" role="img" aria-label="iPhone home screen with WebRTC notification">
+.caller-info{text-align:center;}
+.caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:6px;}
+.caller-status{font-size:15px;color:rgba(255,255,255,.5);}
+
+/* ── SPHERE ── */
+.sphere-wrap{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;}
+#sphere-canvas{border-radius:50%;display:block;}
+
+/* Outer glow rings */
+.ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.06);animation:ringPulse 3s ease-in-out infinite;}
+.ring:nth-child(1){width:220px;height:220px;animation-delay:0s;}
+.ring:nth-child(2){width:250px;height:250px;animation-delay:.5s;}
+.ring:nth-child(3){width:280px;height:280px;animation-delay:1s;}
+@keyframes ringPulse{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:.08;transform:scale(1.03);}}
+
+/* ── CALL ACTIONS ── */
+.cac{display:flex;justify-content:space-around;width:100%;align-items:center;}
+.cbw{text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.cbi{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.cbi i{font-size:26px;color:#fff;}
+.cbr{background:#ff3b30;}
+.cbg{background:rgba(255,255,255,.15);}
+.cbl{font-size:12px;color:rgba(255,255,255,.6);}
+
+#wc{display:none;}
+</style>
+</head>
+<body>
+
+<div class="shell">
   <div class="notch"></div>
   <div class="screen">
     <div class="wp"></div>
@@ -86,8 +90,8 @@
           <div class="bar" style="height:10px"></div>
           <div class="bar" style="height:13px"></div>
         </div>
-        <i class="ti ti-wifi" style="font-size:14px;color:#fff;" aria-hidden="true"></i>
-        <i class="ti ti-battery-2" style="font-size:16px;color:#fff;" aria-hidden="true"></i>
+        <i class="ti ti-wifi" style="font-size:14px;color:#fff;"></i>
+        <i class="ti ti-battery-2" style="font-size:16px;color:#fff;"></i>
       </div>
     </div>
 
@@ -96,7 +100,6 @@
         <div class="dd" id="dateLine">Fr. 4. Sept.</div>
         <div class="dn" id="timeLine">17:37</div>
       </div>
-
       <div class="grid">
         <div class="ai"><div class="ic" style="overflow:hidden;"><img src="linkedin-app-icon.webp" alt="LinkedIn" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">LinkedIn</span></div>
         <div class="ai"><div class="ic" style="overflow:hidden;"><img src="wavestone-logo-cropped.png" alt="Wavestone" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Wavestone</span></div>
@@ -110,140 +113,408 @@
         <div class="ai"><div class="ic" style="overflow:hidden;"><img src="wa-whatsapp-icon.webp" alt="WhatsApp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">WhatsApp</span></div>
         <div class="ai"><div class="ic" style="overflow:hidden;"><img src="Instagram_logo_2022.svg.webp" alt="Instagram" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Instagram</span></div>
       </div>
-
       <div class="dock">
-        <div class="di" style="overflow:hidden;"><img src="Phone_iOS.png" alt="Telefon" style="width:100%;height:100%;object-fit:cover;border-radius:16px;transform:scale(1.18);"></div>
-        <div class="di" style="overflow:hidden;"><img src="Apple_Calendar_(iOS).svg.webp" alt="Kalender" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"></div>
-        <div class="di" style="overflow:hidden;"><img src="Contacts_(iOS).png" alt="Kontakte" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"></div>
-        <div class="di" style="background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;"><img src="google-chrome-icon.webp" alt="Chrome" style="width:84%;height:84%;object-fit:contain;"></div>
+        <div class="di"><img src="Phone_iOS.png" alt="Telefon" style="width:100%;height:100%;object-fit:cover;border-radius:16px;transform:scale(1.18);"></div>
+        <div class="di"><img src="Apple_Calendar_(iOS).svg.webp" alt="Kalender" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"></div>
+        <div class="di"><img src="Contacts_(iOS).png" alt="Kontakte" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"></div>
+        <div class="di" style="background:#fff;"><img src="google-chrome-icon.webp" alt="Chrome" style="width:84%;height:84%;object-fit:contain;"></div>
       </div>
       <div class="hi"></div>
     </div>
 
+    <!-- Notification -->
     <div id="nb">
       <div class="nt">
-        <div class="nai"><i class="ti ti-waves" aria-hidden="true"></i></div>
+        <div class="nai"><i class="ti ti-sparkles"></i></div>
         <span class="nan">AVA</span>
         <span class="ntm" id="ntm">gerade eben</span>
       </div>
-      <div class="ntit">Personal KI-Assistentin</div>
-      <div class="nbod">Hey Eugen, 2 Minuten?</div>
+      <div class="ntit">Persönliche KI-Assistentin</div>
+      <div class="nbod">Hey Eugen, 2 Minuten? 👋</div>
       <div class="nact">
         <button class="nbtn bdec" onclick="decline()">Ablehnen</button>
         <button class="nbtn bacc" onclick="accept()">Annehmen</button>
       </div>
     </div>
 
+    <!-- Call overlay with sphere -->
     <div id="co">
-      <div style="text-align:center;width:100%;">
-        <div class="pw2" style="margin:0 auto;">
-          <div class="pr"></div>
-          <div class="pr"></div>
-          <div class="cav" style="position:relative;margin:0;width:100px;height:100px;">
-            <i class="ti ti-robot" aria-hidden="true"></i>
-          </div>
-        </div>
-        <div style="margin-top:16px;">
-          <div class="cn">KI-Berater</div>
-          <div class="cs" id="cst">Verbinden…</div>
-        </div>
+      <div class="caller-info">
+        <div class="caller-name">AVA</div>
+        <div class="caller-status" id="cst">Verbinden…</div>
       </div>
-      <div id="wc"></div>
+
+      <div class="sphere-wrap">
+        <div class="ring"></div>
+        <div class="ring"></div>
+        <div class="ring"></div>
+        <canvas id="sphere-canvas" width="180" height="180"></canvas>
+      </div>
+
       <div class="cac">
-        <div class="cbw">
-          <div class="cbi" style="background:rgba(255,255,255,.15);"><i class="ti ti-microphone-off" aria-hidden="true"></i></div>
-          <div class="cbl">Stumm</div>
+        <div class="cbw" onclick="toggleMute()">
+          <div class="cbi cbg" id="muteBtn"><i class="ti ti-microphone" id="muteIcon"></i></div>
+          <div class="cbl" id="muteLabel">Stumm</div>
         </div>
         <div class="cbw" onclick="endCall()">
-          <div class="cbi cbr"><i class="ti ti-phone-off" aria-hidden="true"></i></div>
+          <div class="cbi cbr"><i class="ti ti-phone-off"></i></div>
           <div class="cbl">Beenden</div>
         </div>
-        <div class="cbw">
-          <div class="cbi" style="background:rgba(255,255,255,.15);"><i class="ti ti-volume" aria-hidden="true"></i></div>
+        <div class="cbw" onclick="toggleSpeaker()">
+          <div class="cbi cbg" id="spkBtn"><i class="ti ti-volume" id="spkIcon"></i></div>
           <div class="cbl">Lautsprecher</div>
         </div>
       </div>
     </div>
 
+    <div id="wc"></div>
   </div>
-</div>
 </div>
 
 <script>
-let ac=null;
-function unlockAudio(){if(ac)return;ac=new(window.AudioContext||window.webkitAudioContext)();}
-function playSound(){
-  try{
+// ── State ──
+let audioCtx = null;
+let analyser = null;
+let micSource = null;
+let animFrame = null;
+let muted = false;
+let spherePhase = 0;
+let smoothedLevel = 0;
+let idleNoise = 0;
+let isTalking = false;
+let talkTimer = null;
+const canvas = document.getElementById('sphere-canvas');
+const ctx2d = canvas.getContext('2d');
+
+// ── Clock ──
+function updateClock() {
+  const n = new Date();
+  const h = String(n.getHours()).padStart(2,'0');
+  const m = String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('clk').textContent = h+':'+m;
+  const tl = document.getElementById('timeLine');
+  if(tl) tl.textContent = h+':'+m;
+}
+function updateDate() {
+  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const months = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
+  const n = new Date();
+  const dl = document.getElementById('dateLine');
+  if(dl) dl.textContent = days[n.getDay()]+'. '+n.getDate()+'. '+months[n.getMonth()];
+}
+updateClock(); updateDate(); setInterval(updateClock, 30000);
+
+// ── iOS Notification Sound (Web Audio) ──
+function unlockAudio() {
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+['click','touchstart','mousemove'].forEach(e => document.addEventListener(e, unlockAudio, {once:true}));
+
+function playNotifSound() {
+  try {
     unlockAudio();
-    [0,500].forEach(d=>{
-      setTimeout(()=>{
-        const o=ac.createOscillator(),g=ac.createGain();
-        o.connect(g);g.connect(ac.destination);
-        o.type='sine';
-        o.frequency.setValueAtTime(880,ac.currentTime);
-        o.frequency.setValueAtTime(1100,ac.currentTime+.1);
-        o.frequency.setValueAtTime(880,ac.currentTime+.2);
-        g.gain.setValueAtTime(0,ac.currentTime);
-        g.gain.linearRampToValueAtTime(.35,ac.currentTime+.05);
-        g.gain.setValueAtTime(.35,ac.currentTime+.25);
-        g.gain.linearRampToValueAtTime(0,ac.currentTime+.38);
-        o.start(ac.currentTime);o.stop(ac.currentTime+.4);
-      },d);
+    const ac = audioCtx;
+    // iOS-style tri-tone: three short ascending notes
+    const notes = [
+      {freq:1047, start:0,    dur:0.12},
+      {freq:1319, start:0.14, dur:0.12},
+      {freq:1568, start:0.28, dur:0.18},
+      {freq:1047, start:0.55, dur:0.12},
+      {freq:1319, start:0.69, dur:0.12},
+      {freq:1568, start:0.83, dur:0.18},
+    ];
+    notes.forEach(({freq, start, dur}) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      const t = ac.currentTime + start;
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.28, t + 0.02);
+      gain.gain.setValueAtTime(0.28, t + dur - 0.04);
+      gain.gain.linearRampToValueAtTime(0, t + dur);
+      osc.start(t); osc.stop(t + dur + 0.01);
     });
-  }catch(e){}
+  } catch(e) { console.warn('Audio error:', e); }
 }
-function updateClock(){
-  const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0');
-  document.getElementById('clk').textContent=h+':'+m;
-  const tl=document.getElementById('timeLine');
-  if(tl) tl.textContent=h+':'+m;
-}
-function updateDate(){
-  const days=['So','Mo','Di','Mi','Do','Fr','Sa'];
-  const months=['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
-  const n=new Date();
-  const dl=document.getElementById('dateLine');
-  if(dl) dl.textContent=days[n.getDay()]+'. '+n.getDate()+'. '+months[n.getMonth()];
-}
-updateClock();updateDate();setInterval(updateClock,30000);
-['click','touchstart','mousemove'].forEach(e=>document.addEventListener(e,unlockAudio,{once:true}));
-setTimeout(()=>{
-  const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0');
-  document.getElementById('ntm').textContent=h+':'+m;
+
+// ── Show notification after 10s ──
+setTimeout(() => {
+  const n = new Date();
+  const h = String(n.getHours()).padStart(2,'0');
+  const m = String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('ntm').textContent = h+':'+m;
   document.getElementById('nb').classList.add('show');
-  playSound();
-},10000);
-function decline(){
-  const b=document.getElementById('nb');
-  b.style.transition='all .4s ease';b.style.transform='translateY(-130px)';b.style.opacity='0';
-  setTimeout(()=>{b.classList.remove('show');b.style.transform='';b.style.opacity='';b.style.transition='';},420);
+  playNotifSound();
+}, 10000);
+
+// ── Dismiss notification ──
+function decline() {
+  const b = document.getElementById('nb');
+  b.style.transition = 'transform .4s ease, opacity .4s ease';
+  b.style.transform = 'translateY(-160px)';
+  b.style.opacity = '0';
+  setTimeout(() => {
+    b.classList.remove('show');
+    b.style.transform = '';
+    b.style.opacity = '';
+    b.style.transition = '';
+  }, 420);
 }
-function accept(){
+
+// ── Accept → open sphere screen + start WebRTC immediately ──
+function accept() {
   decline();
-  setTimeout(()=>{document.getElementById('co').classList.add('active');initRTC();},450);
+  setTimeout(() => {
+    document.getElementById('co').classList.add('active');
+    startSphere();
+    initRTC();
+  }, 450);
 }
-function endCall(){
+
+// ── End call ──
+function endCall() {
   document.getElementById('co').classList.remove('active');
-  document.getElementById('cst').textContent='Verbinden…';
-  document.getElementById('wc').innerHTML='';
+  document.getElementById('cst').textContent = 'Verbinden…';
+  if(animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  if(micSource) { try { micSource.disconnect(); } catch(e){} micSource = null; }
 }
-function initRTC(){
-  const s=document.getElementById('cst');s.textContent='Verbinden…';
-  const c=document.getElementById('wc');c.innerHTML='';
-  const sc=document.createElement('script');
-  sc.src='https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js';
-  sc.onload=()=>{
-    if(window.initWebRTCWidget){
-      window.initWebRTCWidget('https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96')
-      .then(w=>{
-        s.textContent='Verbunden';
-        w.on('newRTCSession',sess=>{
-          sess.on('newInfo',ev=>{try{const d=JSON.parse(ev.request.body);console.log('SIM:',d);}catch(e){}});
+
+// ── Mute / Speaker toggles ──
+function toggleMute() {
+  muted = !muted;
+  if(micSource) {
+    micSource.disconnect();
+    if(!muted) micSource.connect(analyser);
+  }
+  document.getElementById('muteIcon').className = muted ? 'ti ti-microphone-off' : 'ti ti-microphone';
+  document.getElementById('muteBtn').style.background = muted ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.15)';
+  document.getElementById('muteLabel').textContent = muted ? 'Ton an' : 'Stumm';
+}
+function toggleSpeaker() {
+  const btn = document.getElementById('spkBtn');
+  const active = btn.dataset.active === '1';
+  btn.dataset.active = active ? '0' : '1';
+  btn.style.background = active ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.35)';
+}
+
+// ══════════════════════════════════════════
+// SPHERE RENDERER
+// ══════════════════════════════════════════
+function startSphere() {
+  // Try to get mic for audio-reactive animation
+  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({audio:true, video:false})
+      .then(stream => {
+        unlockAudio();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.8;
+        micSource = audioCtx.createMediaStreamSource(stream);
+        micSource.connect(analyser);
+        renderSphere();
+      })
+      .catch(() => { renderSphere(); }); // fallback: no mic, still animate
+  } else {
+    renderSphere();
+  }
+}
+
+function getAudioLevel() {
+  if(!analyser) return 0;
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+  let sum = 0;
+  for(let i = 0; i < data.length; i++) sum += data[i];
+  return sum / data.length / 255;
+}
+
+function renderSphere() {
+  const W = 180, H = 180, cx = W/2, cy = H/2, R = 72;
+  const numLines = 28;
+  let time = 0;
+
+  function drawFrame() {
+    animFrame = requestAnimationFrame(drawFrame);
+    time += 0.018;
+    spherePhase += 0.012;
+
+    const rawLevel = getAudioLevel();
+    // Smooth the level for fluid animation
+    smoothedLevel += (rawLevel - smoothedLevel) * 0.12;
+
+    // Idle breathing even when silent
+    const breath = 0.04 * Math.sin(time * 1.2);
+    const energy = smoothedLevel + breath + 0.02;
+
+    ctx2d.clearRect(0, 0, W, H);
+
+    // ── Background glow ──
+    const glowR = R + 10 + energy * 30;
+    const grd = ctx2d.createRadialGradient(cx, cy, R*0.3, cx, cy, glowR);
+    grd.addColorStop(0,   `rgba(120, 80, 255, ${0.18 + energy * 0.3})`);
+    grd.addColorStop(0.5, `rgba(60,  30, 180, ${0.10 + energy * 0.15})`);
+    grd.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx2d.beginPath();
+    ctx2d.arc(cx, cy, glowR, 0, Math.PI*2);
+    ctx2d.fillStyle = grd;
+    ctx2d.fill();
+
+    // ── Sphere base (dark glass) ──
+    const baseGrd = ctx2d.createRadialGradient(cx-20, cy-24, 4, cx, cy, R);
+    baseGrd.addColorStop(0,   `rgba(160,120,255,${0.55 + energy*0.25})`);
+    baseGrd.addColorStop(0.45,`rgba(70, 40, 200,${0.70 + energy*0.15})`);
+    baseGrd.addColorStop(1,   `rgba(10,  5,  60, 0.95)`);
+    ctx2d.beginPath();
+    ctx2d.arc(cx, cy, R, 0, Math.PI*2);
+    ctx2d.fillStyle = baseGrd;
+    ctx2d.fill();
+
+    // ── Latitude lines (deformed by audio) ──
+    ctx2d.save();
+    ctx2d.beginPath();
+    ctx2d.arc(cx, cy, R, 0, Math.PI*2);
+    ctx2d.clip();
+
+    for(let i = 0; i < numLines; i++) {
+      const t = i / numLines; // 0..1
+      const lat = (t - 0.5) * Math.PI; // -PI/2 .. PI/2
+      const ry = Math.cos(lat) * R;
+      const yOff = Math.sin(lat) * R;
+
+      // Warp amplitude based on audio + position
+      const warp = energy * 18 * Math.sin(lat * 3 + time * 2.5 + i * 0.4);
+      const baseY = cy + yOff;
+
+      ctx2d.beginPath();
+      // Draw ellipse as bezier for warp effect
+      const steps = 64;
+      for(let s = 0; s <= steps; s++) {
+        const angle = (s / steps) * Math.PI * 2;
+        const ex = cx + Math.cos(angle) * ry;
+        const perturbY = Math.sin(angle * 3 + time * 1.8 + i) * energy * 8;
+        const ey = baseY + Math.sin(angle) * 2 + perturbY + warp * Math.sin(angle);
+        s === 0 ? ctx2d.moveTo(ex, ey) : ctx2d.lineTo(ex, ey);
+      }
+      ctx2d.closePath();
+
+      const alpha = 0.08 + energy * 0.22 + 0.06 * Math.abs(Math.sin(lat * 2 + time));
+      ctx2d.strokeStyle = `rgba(180,140,255,${alpha})`;
+      ctx2d.lineWidth = 0.8;
+      ctx2d.stroke();
+    }
+
+    // ── Longitude lines ──
+    const numLong = 16;
+    for(let i = 0; i < numLong; i++) {
+      const angle = (i / numLong) * Math.PI + spherePhase * 0.3;
+      ctx2d.beginPath();
+      const steps = 48;
+      for(let s = 0; s <= steps; s++) {
+        const lat = (s / steps - 0.5) * Math.PI;
+        const rr = R + energy * 14 * Math.sin(lat * 2 + time * 2 + i * 0.5);
+        const ex = cx + Math.cos(angle) * Math.cos(lat) * rr;
+        const ey = cy + Math.sin(lat) * rr;
+        s === 0 ? ctx2d.moveTo(ex, ey) : ctx2d.lineTo(ex, ey);
+      }
+      const alpha = 0.05 + energy * 0.18;
+      ctx2d.strokeStyle = `rgba(200,160,255,${alpha})`;
+      ctx2d.lineWidth = 0.7;
+      ctx2d.stroke();
+    }
+
+    // ── Inner energy core ──
+    const coreR = (12 + energy * 28) * (1 + 0.08 * Math.sin(time * 4));
+    const coreGrd = ctx2d.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+    coreGrd.addColorStop(0,   `rgba(240,220,255,${0.6 + energy*0.4})`);
+    coreGrd.addColorStop(0.5, `rgba(160,100,255,${0.3 + energy*0.3})`);
+    coreGrd.addColorStop(1,   'rgba(80,40,200,0)');
+    ctx2d.beginPath();
+    ctx2d.arc(cx, cy, coreR, 0, Math.PI*2);
+    ctx2d.fillStyle = coreGrd;
+    ctx2d.fill();
+
+    ctx2d.restore();
+
+    // ── Specular highlight (glass feel) ──
+    const specGrd = ctx2d.createRadialGradient(cx-22, cy-26, 2, cx-18, cy-20, R*0.55);
+    specGrd.addColorStop(0,   'rgba(255,255,255,0.30)');
+    specGrd.addColorStop(0.5, 'rgba(255,255,255,0.06)');
+    specGrd.addColorStop(1,   'rgba(255,255,255,0)');
+    ctx2d.beginPath();
+    ctx2d.arc(cx, cy, R, 0, Math.PI*2);
+    ctx2d.fillStyle = specGrd;
+    ctx2d.fill();
+
+    // ── Edge rim light ──
+    const rimGrd = ctx2d.createRadialGradient(cx, cy, R*0.75, cx, cy, R);
+    rimGrd.addColorStop(0,   'rgba(120,80,255,0)');
+    rimGrd.addColorStop(0.7, `rgba(140,100,255,${0.06 + energy*0.12})`);
+    rimGrd.addColorStop(1,   `rgba(180,130,255,${0.18 + energy*0.22})`);
+    ctx2d.beginPath();
+    ctx2d.arc(cx, cy, R, 0, Math.PI*2);
+    ctx2d.fillStyle = rimGrd;
+    ctx2d.fill();
+  }
+
+  drawFrame();
+}
+
+// ── WebRTC — auto-start, no widget UI shown ──
+function initRTC() {
+  const statusEl = document.getElementById('cst');
+  statusEl.textContent = 'Verbinden…';
+
+  const sc = document.createElement('script');
+  sc.src = 'https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js';
+  sc.onload = () => {
+    if(window.initWebRTCWidget) {
+      // Pass autoStart:true and hide the widget UI entirely
+      window.initWebRTCWidget(
+        'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96',
+        { autoStart: true, hideUI: true }
+      ).then(widget => {
+        statusEl.textContent = 'Verbunden';
+        widget.on('newRTCSession', session => {
+          statusEl.textContent = 'Gespräch läuft';
+          // Drive sphere from remote audio stream if available
+          session.on('addstream', e => {
+            try {
+              unlockAudio();
+              const remoteSource = audioCtx.createMediaStreamSource(e.stream);
+              if(!analyser) {
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.8;
+              }
+              remoteSource.connect(analyser);
+            } catch(err) {}
+          });
+          session.on('newInfo', ev => {
+            try {
+              const d = JSON.parse(ev.request.body);
+              console.log('AVA data:', d);
+            } catch(e) {}
+          });
+          session.on('ended', () => {
+            statusEl.textContent = 'Anruf beendet';
+            setTimeout(endCall, 1500);
+          });
         });
-      }).catch(()=>{s.textContent='Verbindung fehlgeschlagen';});
+        // Auto-initiate the call
+        if(widget.startCall) widget.startCall();
+        else if(widget.call)  widget.call();
+      }).catch(err => {
+        console.warn('WebRTC error:', err);
+        statusEl.textContent = 'Verbindung fehlgeschlagen';
+      });
     }
   };
-  sc.onerror=()=>{s.textContent='Widget nicht geladen';};
+  sc.onerror = () => { statusEl.textContent = 'Widget nicht geladen'; };
   document.head.appendChild(sc);
 }
 </script>
+</body>
+</html>
