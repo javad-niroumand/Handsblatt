@@ -29,7 +29,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .ai{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;}
 .ic{width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .al{font-size:11px;color:#fff;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.6);font-weight:400;font-family:-apple-system,sans-serif;}
-.dock{background:rgba(255,255,255,.15);backdrop-filter:blur(20px);border-radius:26px;margin:0 16px;padding:12px 16px;display:flex;justify-content:space-around;align-items:center;}
+.dock{background:rgba(255,255,255,.15);backdrop-filter:blur(20px);border-radius:26px;margin:0 16px;padding:12px 16px;display:flex;justify-space-around;align-items:center;}
 .di{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
 .hi{width:134px;height:5px;background:rgba(255,255,255,.35);border-radius:3px;margin:8px auto 0;display:block;}
 
@@ -51,10 +51,10 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 #co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;border-radius:52px;font-family:-apple-system,sans-serif;overflow:hidden;}
 #co.active{display:flex;}
 
-/* Default call view (no scene yet) */
+/* Default call view */
 #co-default{display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;width:100%;height:100%;}
-.caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:4px;text-align:center;}
-.caller-status{font-size:14px;color:rgba(255,255,255,.45);text-align:center;letter-spacing:.3px;}
+.caller-name{font-size:32px;font-weight:400;color:#fff;letter-spacing:-.5px;margin-bottom:6px;text-align:center;}
+.caller-status{font-size:15px;color:rgba(255,255,255,.6);font-weight:400;letter-spacing:0.5px;text-align:center;}
 #sphere-canvas{display:block;border-radius:50%;}
 
 /* Scene call view */
@@ -62,8 +62,8 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 #co-scene.active{display:flex;}
 
 .scene-caller-head{text-align:center;flex-shrink:0;}
-.scene-caller-name{font-size:24px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:4px;}
-.scene-caller-status{font-size:13px;color:rgba(255,255,255,.5);}
+.scene-caller-name{font-size:26px;font-weight:400;color:#fff;letter-spacing:-.3px;margin-bottom:4px;}
+.scene-caller-status{font-size:14px;color:rgba(255,255,255,.6);font-weight:400;letter-spacing:0.3px;}
 
 .sphere-zone{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;}
 
@@ -99,17 +99,17 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 /* Shared call controls */
 .cac{display:flex;justify-content:space-around;width:100%;align-items:center;flex-shrink:0;}
 .cbw{text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;}
-.cbi{border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.cbi{border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s, background-color .2s ease;}
 .cbi:active{transform:scale(.92);}
 .cbi i{color:#fff;}
 .cbr{background:#ff3b30;}
-.cbg{background:rgba(255,255,255,.13);}
-.cbl{font-size:10px;color:rgba(255,255,255,.6);}
+.cbg{background:rgba(255,255,255,.1);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);}
+.cbl{font-size:11px;color:rgba(255,255,255,.6);font-weight:400;}
 
 /* Default view controls (64px) */
 #co-default .cbi{width:64px;height:64px;}
 #co-default .cbi i{font-size:26px;}
-#co-default .cbl{font-size:12px;color:rgba(255,255,255,.55);}
+#co-default .cbl{font-size:12px;color:rgba(255,255,255,.65);}
 #co-default .cac{margin-top:0;}
 
 /* Scene view controls (52px) */
@@ -251,7 +251,6 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
           <div class="scene-caller-status">Verbunden</div>
         </div>
 
-        <!-- Canvas sphere moved here when scene activates -->
         <div class="sphere-zone" id="sceneSphereZone"></div>
 
         <div class="action-feed">
@@ -293,7 +292,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
       <!-- Overlay for carousel / approval -->
       <div id="overlayLayer"></div>
 
-    </div><!-- /#co -->
+    </div>
   </div>
 </div>
 
@@ -313,17 +312,29 @@ var time          = 0;
 var callActive    = false;
 var notifTimer    = null;
 
-var speaking  = false;
-var targetE   = 0;
-var smoothE   = 0;
+var speaking   = false;
+var targetE    = 0;
+var smoothE    = 0;
 var speakTimer = null;
-var lastText  = '';
+var lastText   = '';
+
+var sphereColorMode = 'default'; // 'default', 'success', 'warning'
 
 var sceneTimers = [];
+var scenes = [];
 
-var sc  = document.getElementById('sphere-canvas');
+var sc    = document.getElementById('sphere-canvas');
 var ctx2d = sc.getContext('2d');
 var CX = 105, CY = 105, R = 86;
+
+function activateScene(idx) {
+  console.log('Activating scene:', idx);
+}
+
+function clearSceneTimers() {
+  sceneTimers.forEach(clearTimeout);
+  sceneTimers = [];
+}
 
 /* ───────────────────────────────────────────────
    CLOCK
@@ -336,6 +347,7 @@ function updateClock() {
   var t = document.getElementById('timeLine');
   if (t) t.textContent = h + ':' + m;
 }
+
 function updateDate() {
   var D = ['So','Mo','Di','Mi','Do','Fr','Sa'];
   var M = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
@@ -343,6 +355,7 @@ function updateDate() {
   var d = document.getElementById('dateLine');
   if (d) d.textContent = D[now.getDay()] + '. ' + now.getDate() + '. ' + M[now.getMonth()];
 }
+
 function schedClock() {
   updateClock();
   var now = new Date();
@@ -358,6 +371,7 @@ function unlockAudio() {
   if (audioCtx) { audioCtx.resume(); return; }
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 }
+
 ['click','touchstart','mousemove'].forEach(function(e) {
   document.addEventListener(e, unlockAudio, { once: true });
 });
@@ -408,14 +422,28 @@ function findBotBubble(node) {
 
 function onBotActivity(el) {
   var text = (el.textContent || '').trim();
-  if (text === lastText) return;
+  if (text === lastText || text === '') return;
   lastText = text;
   speaking = true;
-  targetE = 0.75;
+
+  if (text.indexOf('!') !== -1) {
+    targetE = 0.95; 
+  } else if (text.indexOf('?') !== -1) {
+    targetE = 0.55; 
+  } else {
+    targetE = 0.75;
+  }
+
+  var textLength = text.length;
+  var dynamicDuration = Math.max(1500, textLength * 65);
+
   clearTimeout(speakTimer);
   speakTimer = setTimeout(function() {
-    speaking = false; targetE = 0; lastText = '';
-  }, 1400);
+    speaking = false; 
+    targetE = 0; 
+    lastText = '';
+    sphereColorMode = 'default';
+  }, dynamicDuration);
 }
 
 function startTranscriptObserver() {
@@ -478,10 +506,13 @@ window.addEventListener('load', function() {
       document.getElementById('cst').textContent = 'Verbunden';
       startTranscriptObserver();
 
-      /* ── SIP INFO → scene switching ── */
       session.on('newInfo', function(infoEvent) {
         try {
           var data = JSON.parse(infoEvent.request.body);
+          
+          if (data.action === 'approval_requested') sphereColorMode = 'warning';
+          if (data.action === 'process_complete') sphereColorMode = 'success';
+
           var idx = scenes.findIndex(function(s) { return s.action === data.action; });
           if (idx !== -1) activateScene(idx);
         } catch(e) { console.warn('SIP INFO parse error:', e); }
@@ -542,10 +573,10 @@ function endCall() {
   if (transcriptObs) { transcriptObs.disconnect(); transcriptObs = null; }
   speaking = false; targetE = 0; smoothE = 0;
   clearSceneTimers();
-  // Reset to default view
+  
   document.getElementById('co-default').style.display = 'flex';
   document.getElementById('co-scene').classList.remove('active');
-  document.getElementById('co-default').appendChild(sc); // return canvas
+  document.getElementById('co-default').appendChild(sc);
   document.getElementById('overlayLayer').innerHTML = '';
   try { if (widgetRef && widgetRef.endCall) widgetRef.endCall(); } catch(e) {}
 }
@@ -558,7 +589,7 @@ function toggleMute() {
   });
   ['muteBtn','muteBtnScene'].forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.style.background = muted ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.13)';
+    if (el) el.style.background = muted ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.1)';
   });
   ['muteLabel','muteLabelScene'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -572,14 +603,14 @@ function toggleSpeaker() {
     if (!b) return;
     var on = b.dataset.on === '1';
     b.dataset.on = on ? '0' : '1';
-    b.style.background = on ? 'rgba(255,255,255,.13)' : 'rgba(255,255,255,.3)';
+    b.style.background = on ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.25)';
   });
 }
 
 /* ───────────────────────────────────────────────
-   SPHERE RENDER
+   ORGANIC LIQUID BLOB RENDER
 ─────────────────────────────────────────────── */
-function drawLoop(ts) {
+function drawLoop() {
   if (!sphereRunning) return;
   animFrame = requestAnimationFrame(drawLoop);
   time += 0.016;
@@ -590,345 +621,66 @@ function drawLoop(ts) {
 
 function drawSphere(E) {
   ctx2d.clearRect(0, 0, 210, 210);
-  if (E > 0.03) {
-    var gr = ctx2d.createRadialGradient(CX, CY, R * .35, CX, CY, R + 12 + E * 22);
-    gr.addColorStop(0, 'rgba(80,190,255,' + (0.12 + E * .28) + ')');
-    gr.addColorStop(.6, 'rgba(40,100,220,' + (0.03 + E * .08) + ')');
-    gr.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx2d.beginPath(); ctx2d.arc(CX, CY, R + 12 + E * 22, 0, Math.PI * 2);
-    ctx2d.fillStyle = gr; ctx2d.fill();
-  }
-  var base = ctx2d.createRadialGradient(CX - 26, CY - 30, 4, CX, CY, R);
-  if (E > 0.03) {
-    base.addColorStop(0, 'rgba(100,215,255,' + (0.62 + E * .25) + ')');
-    base.addColorStop(.45, 'rgba(22,105,215,' + (0.74 + E * .14) + ')');
-    base.addColorStop(1, 'rgba(4,28,95,.97)');
+  
+  var c1, c2;
+  if (sphereColorMode === 'success') {
+    c1 = '#4fd68f'; c2 = '#0a5d34';
+  } else if (sphereColorMode === 'warning') {
+    c1 = '#f0a830'; c2 = '#8a4b08';
   } else {
-    base.addColorStop(0, 'rgba(110,85,220,.50)');
-    base.addColorStop(.45, 'rgba(52,28,160,.70)');
-    base.addColorStop(1, 'rgba(6,3,44,.95)');
+    c1 = '#a288ff'; c2 = '#451DC7';
   }
-  ctx2d.beginPath(); ctx2d.arc(CX, CY, R, 0, Math.PI * 2);
-  ctx2d.fillStyle = base; ctx2d.fill();
+
+  var idlePulse = Math.sin(time * 2) * 3;
+  var baseR = 55 + idlePulse + (E * 25); 
+
   ctx2d.save();
-  ctx2d.beginPath(); ctx2d.arc(CX, CY, R, 0, Math.PI * 2); ctx2d.clip();
-  for (var i = 0; i < 28; i++) {
-    var lat = (i / 28 - .5) * Math.PI;
-    var ry = Math.cos(lat) * R;
-    var yOff = Math.sin(lat) * R;
-    var warp = E * 26 * Math.sin(lat * 4 + time * 3 + i * .38);
+  ctx2d.translate(CX, CY);
+  
+  ctx2d.shadowBlur = 40 + (E * 30);
+  ctx2d.shadowColor = c1;
+
+  ctx2d.globalCompositeOperation = 'screen';
+  
+  for (var j = 0; j < 3; j++) {
+    ctx2d.save();
+    ctx2d.rotate(time * (0.3 + j * 0.1)); 
+    
     ctx2d.beginPath();
-    for (var s = 0; s <= 72; s++) {
-      var a = (s / 72) * Math.PI * 2;
-      var ex = CX + Math.cos(a) * ry;
-      var p = Math.sin(a * 3 + time * 2.5 + i * .5) * E * 13;
-      var ey = CY + yOff + p + warp * Math.sin(a);
-      s === 0 ? ctx2d.moveTo(ex, ey) : ctx2d.lineTo(ex, ey);
+    var offset = j * (Math.PI * 2 / 3);
+    
+    for (var i = 0; i <= Math.PI * 2.1; i += 0.1) {
+       var wave = Math.sin(i * (3 + j) + time * 4 + offset);
+       var spike = wave * (6 + E * 22);
+       
+       var r = baseR + spike;
+       var x = Math.cos(i) * r;
+       var y = Math.sin(i) * r;
+       
+       if (i === 0) ctx2d.moveTo(x, y);
+       else ctx2d.lineTo(x, y);
     }
     ctx2d.closePath();
-    var alp = E > 0.03 ? 0.05 + E * 0.32 : 0.025;
-    ctx2d.strokeStyle = E > 0.03 ? 'rgba(80,215,255,' + alp + ')' : 'rgba(140,115,240,' + alp + ')';
-    ctx2d.lineWidth = 0.8; ctx2d.stroke();
+
+    var grd = ctx2d.createLinearGradient(-baseR, -baseR, baseR, baseR);
+    grd.addColorStop(0, c1);
+    grd.addColorStop(1, c2);
+
+    ctx2d.globalAlpha = 0.65;
+    ctx2d.fillStyle = grd;
+    ctx2d.fill();
+    ctx2d.restore();
   }
-  for (var i = 0; i < 16; i++) {
-    var ang = (i / 16) * Math.PI + time * 0.06;
-    ctx2d.beginPath();
-    for (var s = 0; s <= 52; s++) {
-      var lat2 = (s / 52 - .5) * Math.PI;
-      var rr = R + E * 20 * Math.sin(lat2 * 3 + time * 2.8 + i * .65) + E * 4;
-      ctx2d.lineTo(CX + Math.cos(ang) * Math.cos(lat2) * rr, CY + Math.sin(lat2) * rr);
-    }
-    var la = E > 0.03 ? 0.03 + E * 0.22 : 0.02;
-    ctx2d.strokeStyle = E > 0.03 ? 'rgba(60,200,255,' + la + ')' : 'rgba(175,145,255,' + la + ')';
-    ctx2d.lineWidth = 0.65; ctx2d.stroke();
-  }
-  var cR = (10 + E * 34) * (1 + .12 * Math.sin(time * 5.5));
-  var cg = ctx2d.createRadialGradient(CX, CY, 0, CX, CY, cR);
-  if (E > 0.03) {
-    cg.addColorStop(0, 'rgba(190,245,255,' + (0.68 + E * .33) + ')');
-    cg.addColorStop(.5, 'rgba(60,180,255,' + (0.28 + E * .36) + ')');
-    cg.addColorStop(1, 'rgba(20,80,200,0)');
-  } else {
-    cg.addColorStop(0, 'rgba(200,190,255,.14)');
-    cg.addColorStop(.5, 'rgba(120,90,220,.06)');
-    cg.addColorStop(1, 'rgba(80,40,200,0)');
-  }
-  ctx2d.beginPath(); ctx2d.arc(CX, CY, cR, 0, Math.PI * 2);
-  ctx2d.fillStyle = cg; ctx2d.fill();
+  
+  ctx2d.globalCompositeOperation = 'source-over';
+  ctx2d.shadowBlur = 0;
+  ctx2d.globalAlpha = E > 0.03 ? 0.4 + (E * 0.3) : 0.15;
+  ctx2d.beginPath();
+  ctx2d.arc(0, 0, baseR * 0.4, 0, Math.PI * 2);
+  ctx2d.fillStyle = '#ffffff';
+  ctx2d.fill();
+  
   ctx2d.restore();
-  var sp = ctx2d.createRadialGradient(CX - 28, CY - 32, 2, CX - 22, CY - 24, R * .5);
-  sp.addColorStop(0, 'rgba(255,255,255,.30)');
-  sp.addColorStop(.55, 'rgba(255,255,255,.05)');
-  sp.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx2d.beginPath(); ctx2d.arc(CX, CY, R, 0, Math.PI * 2);
-  ctx2d.fillStyle = sp; ctx2d.fill();
-  var rim = ctx2d.createRadialGradient(CX, CY, R * .74, CX, CY, R);
-  rim.addColorStop(0, 'rgba(80,60,200,0)');
-  rim.addColorStop(.68, E > 0.03 ? 'rgba(40,155,255,' + (0.07 + E * .15) + ')' : 'rgba(110,80,210,.04)');
-  rim.addColorStop(1,  E > 0.03 ? 'rgba(55,195,255,' + (0.18 + E * .28) + ')' : 'rgba(150,110,240,.08)');
-  ctx2d.beginPath(); ctx2d.arc(CX, CY, R, 0, Math.PI * 2);
-  ctx2d.fillStyle = rim; ctx2d.fill();
-}
-
-/* ───────────────────────────────────────────────
-   SCENES
-─────────────────────────────────────────────── */
-var scenes = [
-  {
-    id: 1, action: 'anruf',
-    animatedSequence: [
-      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "current" }], noPartner: true, duration: 1400 },
-      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "done" }, { text: "Objektdaten abgeglichen", state: "current" }], noPartner: true, duration: 1400 },
-      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "done" }, { text: "Objektdaten abgeglichen", state: "done" }, { text: "Grundbuch-Status abgerufen", state: "current" }], noPartner: true, duration: 1400 },
-      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "done" }, { text: "Objektdaten abgeglichen", state: "done" }, { text: "Grundbuch-Status abgerufen", state: "done" }, { text: "Aktive Verträge erfasst", state: "current" }], noPartner: true, duration: 1400 },
-      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "done" }, { text: "Objektdaten abgeglichen", state: "done" }, { text: "Grundbuch-Status abgerufen", state: "done" }, { text: "Aktive Verträge erfasst", state: "done" }], noPartner: true, duration: 1400 }
-    ]
-  },
-  {
-    id: 2, action: 'energy',
-    logo: 'V', logoColor: '#e60000', logoLabel: 'Anbieter 1',
-    animatedSequence: [
-      { steps: [{ text: "Verbrauchsprognose berechnet", state: "done" }, { text: "Fragt Anbieter 1 an", state: "current" }], speaker: 'mine', exchange: true, duration: 1800 },
-      { steps: [{ text: "Verbrauchsprognose berechnet", state: "done" }, { text: "Anbieter 1 antwortet", state: "current" }], speaker: 'partner', exchange: true, duration: 1600 },
-      { steps: [{ text: "Verbrauchsprognose berechnet", state: "done" }, { text: "Angebot 1 erhalten", state: "done", a2a: true }], speaker: 'partner', exchange: false, pulse: true, duration: 2000 },
-      { steps: [{ text: "Angebot 1 erhalten", state: "done", a2a: true }, { text: "Fragt Anbieter 2 an", state: "current" }], speaker: 'mine', exchange: true, duration: 1800, logo: 'B', logoColor: '#0074d9', logoLabel: 'Anbieter 2' },
-      { steps: [{ text: "Angebot 1 erhalten", state: "done", a2a: true }, { text: "Anbieter 2 antwortet", state: "current" }], speaker: 'partner', exchange: true, duration: 1600 },
-      { steps: [{ text: "Angebot 1 erhalten", state: "done", a2a: true }, { text: "Angebot 2 erhalten", state: "done", a2a: true }], speaker: 'partner', exchange: false, pulse: true, duration: 2000 },
-      { steps: [{ text: "Angebot 2 erhalten", state: "done", a2a: true }, { text: "Fragt Anbieter 3 an", state: "current" }], speaker: 'mine', exchange: true, duration: 1800, logo: 'C', logoColor: '#f0a830', logoLabel: 'Anbieter 3' },
-      { steps: [{ text: "Angebot 2 erhalten", state: "done", a2a: true }, { text: "Anbieter 3 antwortet", state: "current" }], speaker: 'partner', exchange: true, duration: 1600 },
-      { steps: [{ text: "Angebot 2 erhalten", state: "done", a2a: true }, { text: "Angebot 3 erhalten", state: "done", a2a: true }], speaker: 'partner', exchange: false, pulse: true, duration: 2200 },
-      { steps: [{ text: "Angebot 1 erhalten", state: "done", a2a: true }, { text: "Angebot 2 erhalten", state: "done", a2a: true }, { text: "Angebot 3 erhalten", state: "done", a2a: true }], speaker: 'mine', exchange: false, duration: 900, openCarousel: true }
-    ]
-  },
-  {
-    id: 3, action: 'versicherung',
-    logo: null, logoIcon: 'ti-building-bank', logoColor: '#0f6e56', logoLabel: 'Alternativer Versicherer',
-    animatedSequence: [
-      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Agenten-Endpunkt Versicherer wird gesucht ...", state: "current" }], noPartner: true, duration: 3200 },
-      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Bestandsversicherer nicht erreichbar", state: "fail" }], noPartner: true, duration: 2600 },
-      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Bestandsversicherer nicht erreichbar", state: "fail" }, { text: "Zweitversuch über Branchenverzeichnis", state: "fail" }, { text: "Fallback: manuelle Bearbeitung vorbereitet", state: "warn" }], noPartner: true, duration: 3400 },
-      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Bestandsversicherer nicht erreichbar", state: "fail" }, { text: "Zweitversuch über Branchenverzeichnis", state: "fail" }, { text: "Fallback: manuelle Bearbeitung vorbereitet", state: "warn" }, { text: "Fragt alternative Versicherer an", state: "current" }], speaker: 'mine', exchange: true, duration: 3300 },
-      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Bestandsversicherer nicht erreichbar", state: "fail" }, { text: "Zweitversuch über Branchenverzeichnis", state: "fail" }, { text: "Fallback: manuelle Bearbeitung vorbereitet", state: "warn" }, { text: "Zwei Gegenangebote erhalten", state: "done", a2a: true }], speaker: 'partner', exchange: false, pulse: true, duration: 4200 }
-    ]
-  },
-  {
-    id: 4, action: 'glasfaser',
-    animatedSequence: [
-      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "current" }], noPartner: true, duration: 1600 },
-      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "current" }], noPartner: true, duration: 1600 },
-      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "done" }, { text: "Router-Kompatibilität geprüft — zu langsam", state: "fail" }], noPartner: true, duration: 1800 },
-      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "done" }, { text: "Router-Kompatibilität geprüft — zu langsam", state: "fail" }, { text: "Passenden Router gefunden", state: "current" }], noPartner: true, duration: 1600 },
-      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "done" }, { text: "Router-Kompatibilität geprüft — zu langsam", state: "fail" }, { text: "Passenden Router gefunden", state: "done" }, { text: "Mandatsprüfung: 189 € über Limit 150 €", state: "warn" }], noPartner: true, duration: 2400 },
-      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "done" }, { text: "Router-Kompatibilität geprüft — zu langsam", state: "fail" }, { text: "Passenden Router gefunden", state: "done" }, { text: "Mandatsprüfung: 189 € über Limit 150 €", state: "warn" }, { text: "Zahlung ausgelöst", state: "done" }], noPartner: true, duration: 1400 }
-    ]
-  },
-  {
-    id: 5, action: 'buergeramt',
-    animatedSequence: [
-      { steps: [{ text: "Zuständiges Bürgeramt ermittelt", state: "done" }, { text: "Agenten-Endpunkt Bürgeramt wird gesucht ...", state: "current" }], noPartner: true, duration: 4200 },
-      { steps: [{ text: "Zuständiges Bürgeramt ermittelt", state: "done" }, { text: "Agenten-Endpunkt Bürgeramt nicht erreichbar", state: "fail" }], noPartner: true, duration: 3200 },
-      { steps: [{ text: "Zuständiges Bürgeramt ermittelt", state: "done" }, { text: "Agenten-Endpunkt Bürgeramt nicht erreichbar", state: "fail" }, { text: "Alternative Kontaktwege gefunden: Fax <i class=\"ti ti-printer\" style=\"font-size:12px;vertical-align:-1px\"></i>", state: "done" }], noPartner: true, duration: 3200 },
-      { steps: [{ text: "Zuständiges Bürgeramt ermittelt", state: "done" }, { text: "Agenten-Endpunkt Bürgeramt nicht erreichbar", state: "fail" }, { text: "Alternative Kontaktwege gefunden: Fax <i class=\"ti ti-printer\" style=\"font-size:12px;vertical-align:-1px\"></i>", state: "done" }, { text: "Termin und Formular vorbereitet", state: "done" }], noPartner: true, duration: 1600 }
-    ]
-  },
-  {
-    id: 6, action: 'freigabe',
-    animatedSequence: [
-      { steps: [], noPartner: true, duration: 300, openApproval: true }
-    ]
-  }
-];
-
-/* ───────────────────────────────────────────────
-   SCENE ENGINE
-─────────────────────────────────────────────── */
-function clearSceneTimers() {
-  sceneTimers.forEach(function(t) { clearTimeout(t); });
-  sceneTimers = [];
-}
-
-function activateScene(idx) {
-  clearSceneTimers();
-  var s = scenes[idx];
-
-  // Move canvas sphere into scene zone (scaled down to fit)
-  sc.width = 160; sc.height = 160;
-  CX = 80; CY = 80; R = 65;
-  document.getElementById('sceneSphereZone').appendChild(sc);
-
-  // Hide default, show scene
-  document.getElementById('co-default').style.display = 'none';
-  document.getElementById('co-scene').classList.add('active');
-
-  // Clear overlay
-  document.getElementById('overlayLayer').innerHTML = '';
-
-  stopExchange();
-  playSequence(s);
-}
-
-function renderSteps(list) {
-  var el = document.getElementById('feedSteps');
-  el.innerHTML = '';
-  var iconMap = { done: 'ti-check', current: 'ti-point-filled', fail: 'ti-x', warn: 'ti-alert-triangle' };
-  list.forEach(function(s) {
-    var row = document.createElement('div');
-    row.className = 'feed-step ' + s.state + (s.a2a ? ' a2a' : '');
-    row.innerHTML = '<i class="ti ' + iconMap[s.state] + '"></i><span class="feed-step-text">' + s.text + '</span>';
-    el.appendChild(row);
-  });
-}
-
-function startExchange() { document.getElementById('exchangeDot').classList.add('running'); }
-function stopExchange()  { document.getElementById('exchangeDot').classList.remove('running'); }
-
-function setHeaderVisible(visible) {
-  var disp = visible ? 'flex' : 'none';
-  document.getElementById('feedSideMine').style.display = disp;
-  document.getElementById('feedExchange').style.display = disp;
-  document.getElementById('feedSidePartner').style.display = disp;
-}
-
-function setSpeaker(s, speaker, pulse) {
-  var mineIcon    = document.getElementById('feedMineIcon');
-  var partnerIcon = document.getElementById('feedLogo');
-  var mineSide    = document.getElementById('feedSideMine');
-  var partnerSide = document.getElementById('feedSidePartner');
-
-  partnerIcon.style.background = s.logoColor || '#3a3a3c';
-  if (s.logo) {
-    partnerIcon.textContent = s.logo;
-  } else if (s.logoIcon) {
-    partnerIcon.innerHTML = '<i class="ti ' + s.logoIcon + '" style="font-size:14px;color:#fff"></i>';
-  } else {
-    partnerIcon.textContent = '';
-  }
-  document.getElementById('feedPartnerLabel').textContent = s.logoLabel || 'Anbieter';
-
-  mineIcon.classList.toggle('active', speaker === 'mine');
-  partnerIcon.classList.toggle('active', speaker === 'partner');
-  mineSide.classList.toggle('dim', speaker === 'partner');
-  partnerSide.classList.toggle('dim', speaker === 'mine');
-
-  if (pulse) {
-    var el = speaker === 'partner' ? partnerIcon : mineIcon;
-    el.style.transform = 'scale(1.25)';
-    setTimeout(function() { el.style.transform = 'scale(1)'; }, 350);
-  }
-}
-
-function playSequence(s) {
-  var seq = s.animatedSequence;
-  var sceneObj = Object.assign({}, s);
-  var i = 0;
-  function step() {
-    if (i >= seq.length) return;
-    var frame = seq[i];
-    if (frame.logoColor !== undefined) {
-      sceneObj = Object.assign({}, sceneObj, {
-        logo: frame.logo, logoIcon: frame.logoIcon,
-        logoColor: frame.logoColor, logoLabel: frame.logoLabel
-      });
-    }
-    renderSteps(frame.steps);
-    setHeaderVisible(!frame.noPartner);
-    if (!frame.noPartner) setSpeaker(sceneObj, frame.speaker || 'mine', frame.pulse);
-    if (frame.exchange && !frame.noPartner) startExchange(); else stopExchange();
-    if (frame.openCarousel) showCarousel();
-    if (frame.openApproval) showApproval();
-    var t = setTimeout(function() { i++; step(); }, frame.duration);
-    sceneTimers.push(t);
-  }
-  step();
-}
-
-function showCarousel() {
-  var overlayLayer = document.getElementById('overlayLayer');
-  overlayLayer.innerHTML = `
-    <div class="carousel-overlay">
-      <div class="carousel-box">
-        <div class="carousel-title">Energieangebote</div>
-        <div class="track-wrap" id="trackWrap">
-          <div class="track" id="track">
-            <div class="offer-card"><div class="offer-inner rec">
-              <span class="offer-badge">Empfohlen</span>
-              <div class="offer-title">Wallbox-optimiert</div>
-              <div class="offer-sub">Nachttarif für eure zwei E-Autos</div>
-              <div class="offer-row"><span>Grundpreis</span><span>14,90 €/Mon</span></div>
-              <div class="offer-row"><span>Arbeitspreis</span><span>28,4 ct/kWh</span></div>
-              <div class="offer-row"><span>Preisgarantie</span><span>24 Monate</span></div>
-              <div class="offer-row"><span>Bonus</span><span>120 € Wallbox</span></div>
-            </div></div>
-            <div class="offer-card"><div class="offer-inner">
-              <div class="offer-title">Preisstabil</div>
-              <div class="offer-sub">24 Monate Fixpreis</div>
-              <div class="offer-row"><span>Grundpreis</span><span>12,50 €/Mon</span></div>
-              <div class="offer-row"><span>Arbeitspreis</span><span>31,2 ct/kWh</span></div>
-              <div class="offer-row"><span>Preisgarantie</span><span>24 Monate</span></div>
-              <div class="offer-row"><span>Bonus</span><span>Keiner</span></div>
-            </div></div>
-            <div class="offer-card"><div class="offer-inner">
-              <div class="offer-title">Bestandstarif</div>
-              <div class="offer-sub">Mit Umzugsservice</div>
-              <div class="offer-row"><span>Grundpreis</span><span>11,90 €/Mon</span></div>
-              <div class="offer-row"><span>Arbeitspreis</span><span>33,8 ct/kWh</span></div>
-              <div class="offer-row"><span>Laufzeit</span><span>Monatlich</span></div>
-              <div class="offer-row"><span>Bonus</span><span>Umzugsservice</span></div>
-            </div></div>
-          </div>
-        </div>
-        <div class="dots" id="dots"></div>
-      </div>
-    </div>`;
-  setupCarousel();
-}
-
-function setupCarousel() {
-  var track  = document.getElementById('track');
-  var dotsEl = document.getElementById('dots');
-  var wrap   = document.getElementById('trackWrap');
-  var index  = 0;
-  for (var i = 0; i < 3; i++) {
-    var d = document.createElement('div');
-    d.className = 'dot' + (i === 0 ? ' active' : '');
-    dotsEl.appendChild(d);
-  }
-  var dots = dotsEl.children;
-  function update() {
-    track.style.transform = 'translateX(-' + (index * 100) + '%)';
-    for (var i = 0; i < 3; i++) dots[i].className = 'dot' + (i === index ? ' active' : '');
-  }
-  var startX = 0, deltaX = 0, dragging = false;
-  wrap.addEventListener('pointerdown', function(e) { dragging = true; startX = e.clientX; track.style.transition = 'none'; });
-  wrap.addEventListener('pointermove', function(e) {
-    if (!dragging) return;
-    deltaX = e.clientX - startX;
-    track.style.transform = 'translateX(calc(-' + (index * 100) + '% + ' + deltaX + 'px))';
-  });
-  function endDrag() {
-    if (!dragging) return; dragging = false;
-    track.style.transition = 'transform .4s cubic-bezier(.4,0,.2,1)';
-    if (deltaX < -40 && index < 2) index++;
-    else if (deltaX > 40 && index > 0) index--;
-    deltaX = 0; update();
-  }
-  wrap.addEventListener('pointerup', endDrag);
-  wrap.addEventListener('pointerleave', endDrag);
-}
-
-function showApproval() {
-  var overlayLayer = document.getElementById('overlayLayer');
-  overlayLayer.innerHTML = `
-    <div class="approval-overlay">
-      <div class="approval-card">
-        <div class="approval-title">Freigabe · 4 Vorgänge</div>
-        <div class="approval-row ok"><i class="ti ti-check"></i><span class="approval-text">Energie — Wallbox-Vertrag abgeschlossen</span></div>
-        <div class="approval-row ok"><i class="ti ti-check"></i><span class="approval-text">Glasfaser — Wechsel eingeleitet</span></div>
-        <div class="approval-row manual"><i class="ti ti-user"></i><span class="approval-text">Versicherung — Handarbeit, kein Agent erreichbar</span></div>
-        <div class="approval-row manual"><i class="ti ti-user"></i><span class="approval-text">Bürgeramt — Handarbeit, kein Agent erreichbar</span></div>
-        <button class="approval-btn">Freigeben</button>
-      </div>
-    </div>`;
 }
 </script>
 </body>
