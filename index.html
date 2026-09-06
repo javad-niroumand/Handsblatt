@@ -7,66 +7,16 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-
-/* The page is a stacking context.
-   Layer 0 (bottom): Cognigy widget rendered here, completely off to the side
-   Layer 1: phone shell sits on top, clips everything inside
-   Layer 2: our notification + call UI inside the shell */
-body{
-  background:#000;
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
-  min-height:100vh;
-  padding:2rem 0;
-  position:relative;
-}
-
-/* ── COGNIGY WIDGET PRISON ──
-   Rendered far off-screen left, invisible to the user.
-   The widget's call button will be measured + overlaid by JS. */
-#cognigy-prison{
-  position:fixed;
-  top: 0;
-  left:-9999px;
-  width:200px;
-  height:200px;
-  pointer-events:all;  /* must accept clicks */
-  z-index:1;           /* below the phone */
-  overflow:visible;
-}
-
-/* ── GHOST BUTTON ──
-   An absolutely-positioned transparent clone that sits
-   exactly where Cognigy's real button is, but follows
-   our phone's "Annehmen" button position.
-   When user clicks "Annehmen", we redirect that click here,
-   which lands on the real Cognigy button underneath. */
-#ghost-click-layer{
-  position:fixed;
-  pointer-events:none; /* off until we need it */
-  z-index:0;
-  background:transparent;
-  border:none;
-  padding:0;
-  cursor:pointer;
-}
-
-/* ── PHONE ── */
-.shell{
-  width:375px;height:812px;background:#000;
-  border-radius:52px;
-  box-shadow:0 0 0 2px #3a3a3c,0 0 0 5px #1c1c1e,0 30px 80px rgba(0,0,0,.6);
-  position:relative;overflow:hidden;flex-shrink:0;
-  z-index:10; /* above the widget */
-}
+body{background:#000;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:2rem 0;position:relative;}
+#cognigy-prison{position:fixed;top:0;left:-9999px;width:260px;height:200px;pointer-events:all;z-index:1;opacity:0;}
+.shell{width:375px;height:812px;background:#000;border-radius:52px;box-shadow:0 0 0 2px #3a3a3c,0 0 0 5px #1c1c1e,0 30px 80px rgba(0,0,0,.6);position:relative;overflow:hidden;flex-shrink:0;z-index:10;}
 .screen{position:absolute;inset:0;border-radius:52px;overflow:hidden;display:flex;flex-direction:column;}
 .wp{position:absolute;inset:0;background:url('iClarified-iOS27-Celosia-Color-LockScreen.jpeg') center/cover no-repeat;z-index:0;}
 .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:34px;background:#000;border-radius:0 0 22px 22px;z-index:50;}
 .sb{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 24px 4px;color:#fff;font-size:15px;font-weight:600;font-family:-apple-system,sans-serif;}
 .sb-r{display:flex;align-items:center;gap:6px;}
-.bars{display:flex;align-items:flex-end;gap:2px;}
-.bar{width:3px;background:#fff;border-radius:1px;}
+.bars-sb{display:flex;align-items:flex-end;gap:2px;}
+.bar-sb{width:3px;background:#fff;border-radius:1px;}
 .hc{position:relative;z-index:5;flex:1;display:flex;flex-direction:column;padding:0 0 20px;}
 .dw{text-align:center;padding:26px 0 10px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;}
 .dd{font-size:29px;font-weight:600;letter-spacing:.1px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.3);margin-bottom:4px;}
@@ -82,13 +32,7 @@ body{
 .dock{background:rgba(255,255,255,.15);backdrop-filter:blur(20px);border-radius:26px;margin:0 16px;padding:12px 16px;display:flex;justify-content:space-around;align-items:center;}
 .di{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
 .hi{width:134px;height:5px;background:rgba(255,255,255,.35);border-radius:3px;margin:8px auto 0;display:block;}
-
-/* ── NOTIFICATION ── */
-#nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;
-  background:rgba(28,28,30,.92);backdrop-filter:blur(30px);padding:14px 16px;
-  transform:translateY(-160px);opacity:0;
-  transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .55s ease;
-  pointer-events:none;font-family:-apple-system,sans-serif;}
+#nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;background:rgba(28,28,30,.92);backdrop-filter:blur(30px);padding:14px 16px;transform:translateY(-160px);opacity:0;transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .55s ease;pointer-events:none;font-family:-apple-system,sans-serif;}
 #nb.show{transform:translateY(0);opacity:1;pointer-events:all;}
 .nt{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .nai{width:32px;height:32px;border-radius:8px;background:#451DC7;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -98,58 +42,27 @@ body{
 .ntit{font-size:16px;font-weight:600;color:#fff;margin-bottom:3px;}
 .nbod{font-size:14px;color:rgba(255,255,255,.7);line-height:1.4;}
 .nact{display:flex;gap:8px;margin-top:12px;}
-
-/* Annehmen button — this is what the user sees AND clicks.
-   Via JS we will position Cognigy's real button exactly
-   behind this one so the click hits both. */
-#btn-annehmen{
-  flex:1;padding:10px;border-radius:12px;border:none;
-  font-size:15px;font-weight:600;cursor:pointer;
-  font-family:-apple-system,sans-serif;
-  background:#34c759;color:#fff;
-  position:relative; z-index:5;
-}
-#btn-ablehnen{
-  flex:1;padding:10px;border-radius:12px;border:none;
-  font-size:15px;font-weight:600;cursor:pointer;
-  font-family:-apple-system,sans-serif;
-  background:rgba(255,255,255,.12);color:#fff;
-}
-
-/* ── CALL OVERLAY ── */
-#co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;
-  align-items:center;justify-content:space-between;padding:70px 30px 55px;
-  border-radius:52px;font-family:-apple-system,sans-serif;}
+#btn-annehmen{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;background:#34c759;color:#fff;position:relative;z-index:5;}
+#btn-ablehnen{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;background:rgba(255,255,255,.12);color:#fff;}
+#co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;border-radius:52px;font-family:-apple-system,sans-serif;}
 #co.active{display:flex;}
-.caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:6px;text-align:center;}
-.caller-status{font-size:15px;color:rgba(255,255,255,.5);text-align:center;}
-.sphere-wrap{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;}
-#sphere-canvas{border-radius:50%;display:block;}
-.ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.06);animation:ringPulse 3s ease-in-out infinite;}
-.ring:nth-child(1){width:220px;height:220px;animation-delay:0s;}
-.ring:nth-child(2){width:250px;height:250px;animation-delay:.5s;}
-.ring:nth-child(3){width:280px;height:280px;animation-delay:1s;}
-@keyframes ringPulse{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:.08;transform:scale(1.03);}}
+.caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:4px;text-align:center;}
+.caller-status{font-size:14px;color:rgba(255,255,255,.45);text-align:center;letter-spacing:.3px;}
+#sphere-canvas{display:block;border-radius:50%;}
 .cac{display:flex;justify-content:space-around;width:100%;align-items:center;}
 .cbw{text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;}
-.cbi{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.cbi{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.cbi:active{transform:scale(.92);}
 .cbi i{font-size:26px;color:#fff;}
 .cbr{background:#ff3b30;}
-.cbg{background:rgba(255,255,255,.15);}
-.cbl{font-size:12px;color:rgba(255,255,255,.6);}
+.cbg{background:rgba(255,255,255,.13);}
+.cbl{font-size:12px;color:rgba(255,255,255,.55);}
 </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════
-     LAYER 0 — Cognigy widget lives here, off-screen.
-     Its button will be measured + overlaid by JS.
-════════════════════════════════════════════════ -->
 <div id="cognigy-prison"></div>
 
-<!-- ════════════════════════════════════════════════
-     LAYER 1 — Phone shell (z-index 10, on top)
-════════════════════════════════════════════════ -->
 <div class="shell" id="myShell">
   <div class="notch"></div>
   <div class="screen">
@@ -157,11 +70,11 @@ body{
     <div class="sb">
       <span id="clk">9:41</span>
       <div class="sb-r">
-        <div class="bars">
-          <div class="bar" style="height:4px"></div>
-          <div class="bar" style="height:7px"></div>
-          <div class="bar" style="height:10px"></div>
-          <div class="bar" style="height:13px"></div>
+        <div class="bars-sb">
+          <div class="bar-sb" style="height:4px"></div>
+          <div class="bar-sb" style="height:7px"></div>
+          <div class="bar-sb" style="height:10px"></div>
+          <div class="bar-sb" style="height:13px"></div>
         </div>
         <i class="ti ti-wifi" style="font-size:14px;color:#fff;"></i>
         <i class="ti ti-battery-2" style="font-size:16px;color:#fff;"></i>
@@ -173,28 +86,27 @@ body{
         <div class="dn" id="timeLine">17:37</div>
       </div>
       <div class="grid">
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="linkedin-app-icon.webp" alt="LinkedIn" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">LinkedIn</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="wavestone-logo-cropped.png" alt="Wavestone" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Wavestone</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="App_Store_(iOS).svg.webp" alt="App Store" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">App Store</span></div>
-        <div class="ai"><div class="ic" style="background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;"><img src="microsoft-outlook-icon.webp" alt="Outlook" style="width:76%;height:76%;object-fit:contain;"></div><span class="al">Outlook</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="tiktok-rounded-square-icon.webp" alt="TikTok" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">TikTok</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="netflix-icon.webp" alt="Netflix" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Netflix</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="youtube-square-cropped.png" alt="YouTube" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">YouTube</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="apple-music-icon.webp" alt="Apple Music" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Music</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="spotify-icon-png-15382.png" alt="Spotify" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Spotify</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="wa-whatsapp-icon.webp" alt="WhatsApp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">WhatsApp</span></div>
-        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="Instagram_logo_2022.svg.webp" alt="Instagram" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Instagram</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="linkedin-app-icon.webp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">LinkedIn</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="wavestone-logo-cropped.png" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Wavestone</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="App_Store_(iOS).svg.webp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">App Store</span></div>
+        <div class="ai"><div class="ic" style="background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;"><img src="microsoft-outlook-icon.webp" style="width:76%;height:76%;object-fit:contain;"></div><span class="al">Outlook</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="tiktok-rounded-square-icon.webp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">TikTok</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="netflix-icon.webp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Netflix</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="youtube-square-cropped.png" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">YouTube</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="apple-music-icon.webp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Music</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="spotify-icon-png-15382.png" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Spotify</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="wa-whatsapp-icon.webp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">WhatsApp</span></div>
+        <div class="ai"><div class="ic" style="overflow:hidden;"><img src="Instagram_logo_2022.svg.webp" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"></div><span class="al">Instagram</span></div>
       </div>
       <div class="dock">
-        <div class="di"><img src="Phone_iOS.png" alt="Telefon" style="width:100%;height:100%;object-fit:cover;border-radius:16px;transform:scale(1.18);"></div>
-        <div class="di"><img src="Apple_Calendar_(iOS).svg.webp" alt="Kalender" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"></div>
-        <div class="di"><img src="Contacts_(iOS).png" alt="Kontakte" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"></div>
-        <div class="di" style="background:#fff;"><img src="google-chrome-icon.webp" alt="Chrome" style="width:84%;height:84%;object-fit:contain;"></div>
+        <div class="di"><img src="Phone_iOS.png" style="width:100%;height:100%;object-fit:cover;border-radius:16px;transform:scale(1.18);"></div>
+        <div class="di"><img src="Apple_Calendar_(iOS).svg.webp" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"></div>
+        <div class="di"><img src="Contacts_(iOS).png" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"></div>
+        <div class="di" style="background:#fff;"><img src="google-chrome-icon.webp" style="width:84%;height:84%;object-fit:contain;"></div>
       </div>
       <div class="hi"></div>
     </div>
 
-    <!-- Notification -->
     <div id="nb">
       <div class="nt">
         <div class="nai"><i class="ti ti-sparkles"></i></div>
@@ -205,23 +117,16 @@ body{
       <div class="nbod">Hey Eugen, 2 Minuten? 👋</div>
       <div class="nact">
         <button id="btn-ablehnen" onclick="decline()">Ablehnen</button>
-        <!-- This button's real click is caught by Cognigy's real button underneath -->
-        <button id="btn-annehmen" onclick="accept(event)">Annehmen</button>
+        <button id="btn-annehmen" onclick="accept()">Annehmen</button>
       </div>
     </div>
 
-    <!-- Call screen -->
     <div id="co">
-      <div>
+      <div style="text-align:center;">
         <div class="caller-name">AVA</div>
         <div class="caller-status" id="cst">Verbinden…</div>
       </div>
-      <div class="sphere-wrap">
-        <div class="ring"></div>
-        <div class="ring"></div>
-        <div class="ring"></div>
-        <canvas id="sphere-canvas" width="180" height="180"></canvas>
-      </div>
+      <canvas id="sphere-canvas" width="210" height="210"></canvas>
       <div class="cac">
         <div class="cbw" onclick="toggleMute()">
           <div class="cbi cbg" id="muteBtn"><i class="ti ti-microphone" id="muteIcon"></i></div>
@@ -237,332 +142,414 @@ body{
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- Cognigy widget script loads at page start -->
 <script src="https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js"></script>
-
 <script>
-// ── globals ──
-let audioCtx = null, analyser = null, micSource = null;
-let animFrame = null, muted = false;
-let smoothedLevel = 0, spherePhase = 0;
-let cognigyBtn = null;       // the real Cognigy DOM button
-let widgetReady = false;     // widget has resolved
-let widgetRef = null;
-const canvas = document.getElementById('sphere-canvas');
-const ctx2d  = canvas.getContext('2d');
+// ─────────────────────────────────────────────────
+// GLOBALS
+// ─────────────────────────────────────────────────
+var audioCtx      = null;
+var animFrame     = null;
+var muted         = false;
+var cognigyBtn    = null;
+var widgetRef     = null;
+var transcriptObs = null;
+var sphereRunning = false;
+var time          = 0;
 
-// ── Clock / Date ──
-function updateClock() {
-  const n = new Date();
-  const hh = String(n.getHours()).padStart(2,'0');
-  const mm = String(n.getMinutes()).padStart(2,'0');
-  document.getElementById('clk').textContent = hh+':'+mm;
-  const tl = document.getElementById('timeLine');
-  if(tl) tl.textContent = hh+':'+mm;
-}
-function updateDate() {
-  const days   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-  const months = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
-  const n = new Date();
-  const dl = document.getElementById('dateLine');
-  if(dl) dl.textContent = days[n.getDay()]+'. '+n.getDate()+'. '+months[n.getMonth()];
-}
-updateClock(); updateDate(); setInterval(updateClock, 30000);
+// speech / energy state
+var speaking      = false;
+var targetE       = 0;      // 0..1 energy target
+var smoothE       = 0;      // smoothed value the renderer uses
+var speakTimer    = null;   // fires when text stops changing → end of message
+var lastText      = '';     // last seen bubble text
 
-// ── Audio ──
-function unlockAudio() {
-  if(audioCtx) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-}
-['click','touchstart','mousemove'].forEach(e =>
-  document.addEventListener(e, unlockAudio, {once:true})
-);
+// ── message-length params ──
+// Set once when message is COMPLETE (text stops changing).
+// During streaming we just speak at base energy; after the
+// message is full we know its length and adjust the params.
+var msgSpeed      = 1.0;   // time multiplier
+var msgWarp       = 1.0;   // deformation scale  (1 = normal)
+var msgGlow       = 0;     // extra glow radius
+var msgLines      = 28;    // latitude line count
 
-// ── iOS tri-tone ──
-function playNotifSound() {
-  try {
+var sc  = document.getElementById('sphere-canvas');
+var ctx = sc.getContext('2d');
+var CX  = 105, CY = 105, R = 86;
+
+// ─────────────────────────────────────────────────
+// CLOCK
+// ─────────────────────────────────────────────────
+function updateClock(){
+  var n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('clk').textContent=h+':'+m;
+  var t=document.getElementById('timeLine');if(t)t.textContent=h+':'+m;
+}
+function updateDate(){
+  var D=['So','Mo','Di','Mi','Do','Fr','Sa'],
+      M=['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'],
+      n=new Date(),d=document.getElementById('dateLine');
+  if(d)d.textContent=D[n.getDay()]+'. '+n.getDate()+'. '+M[n.getMonth()];
+}
+updateClock();updateDate();setInterval(updateClock,30000);
+
+// ─────────────────────────────────────────────────
+// AUDIO — notification only
+// ─────────────────────────────────────────────────
+function unlockAudio(){if(audioCtx)return;audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+['click','touchstart','mousemove'].forEach(function(e){document.addEventListener(e,unlockAudio,{once:true});});
+
+function playNotifSound(){
+  try{
     unlockAudio();
-    const ac = audioCtx;
-    [{freq:1047,start:0,dur:0.12},{freq:1319,start:0.14,dur:0.12},{freq:1568,start:0.28,dur:0.18},
-     {freq:1047,start:0.55,dur:0.12},{freq:1319,start:0.69,dur:0.12},{freq:1568,start:0.83,dur:0.18}]
-    .forEach(({freq,start,dur}) => {
-      const osc = ac.createOscillator(), gain = ac.createGain();
-      osc.connect(gain); gain.connect(ac.destination);
-      osc.type = 'sine';
-      const t = ac.currentTime + start;
-      osc.frequency.setValueAtTime(freq, t);
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.28, t+0.02);
-      gain.gain.setValueAtTime(0.28, t+dur-0.04);
-      gain.gain.linearRampToValueAtTime(0, t+dur);
-      osc.start(t); osc.stop(t+dur+0.01);
-    });
-  } catch(e) {}
+    var notes=[{f:1047,s:0,d:.12},{f:1319,s:.14,d:.12},{f:1568,s:.28,d:.18},
+               {f:1047,s:.55,d:.12},{f:1319,s:.69,d:.12},{f:1568,s:.83,d:.18}];
+    for(var i=0;i<notes.length;i++){
+      var n=notes[i],o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);o.type='sine';
+      var t=audioCtx.currentTime+n.s;
+      o.frequency.setValueAtTime(n.f,t);
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.28,t+.02);
+      g.gain.setValueAtTime(.28,t+n.d-.04);g.gain.linearRampToValueAtTime(0,t+n.d);
+      o.start(t);o.stop(t+n.d+.01);
+    }
+  }catch(e){}
 }
 
-// ══════════════════════════════════════════════════════
-// STEP 1 — Load Cognigy widget silently on page load.
-//           The widget renders into #cognigy-prison
-//           which is fixed at left:-9999px.
-//           We wait for its button to appear in the DOM.
-// ══════════════════════════════════════════════════════
-window.addEventListener('load', () => {
-  if(!window.initWebRTCWidget) return;
-
-  const prison = document.getElementById('cognigy-prison');
-  const existingIds = new Set(Array.from(document.body.querySelectorAll('*')).map(e=>e));
-
-  // Watch for the widget's elements to appear
-  const obs = new MutationObserver(() => {
-    if(cognigyBtn) return;
-    // Search everywhere in the document for a button the widget added
-    const allBtns = document.querySelectorAll('button, [role="button"]');
-    allBtns.forEach(btn => {
-      if(!existingIds.has(btn) && !document.getElementById('myShell').contains(btn)) {
-        cognigyBtn = btn;
-        obs.disconnect();
-        console.log('[AVA] Cognigy button found:', btn.className, btn.textContent.trim());
-        // Move Cognigy's entire widget root into the prison div so it's contained
-        const widgetRoot = btn.closest('[class*="widget"], [class*="webrtc"], [id*="widget"], [id*="webrtc"]') || btn.parentElement;
-        if(widgetRoot && widgetRoot !== document.body) {
-          prison.appendChild(widgetRoot);
-        }
-      }
-    });
-  });
-  obs.observe(document.body, {childList:true, subtree:true});
-
-  // Initialize the widget — it renders its button into body
-  window.initWebRTCWidget(
-    'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
-  ).then(widget => {
-    widgetRef = widget;
-    widgetReady = true;
-    console.log('[AVA] Widget ready');
-
-    widget.on('newRTCSession', session => {
-      onCallConnected(session);
-    });
-  }).catch(err => console.error('[AVA] Widget error:', err));
-});
-
-// ── Show notification after 10s ──
-setTimeout(() => {
-  const n = new Date();
-  document.getElementById('ntm').textContent =
-    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+setTimeout(function(){
+  var n=new Date();
+  document.getElementById('ntm').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
   document.getElementById('nb').classList.add('show');
   playNotifSound();
-}, 10000);
+},10000);
 
-function decline() {
-  const b = document.getElementById('nb');
-  b.style.transition = 'transform .4s ease, opacity .4s ease';
-  b.style.transform  = 'translateY(-160px)';
-  b.style.opacity    = '0';
-  setTimeout(() => { b.classList.remove('show'); b.style.cssText=''; }, 420);
+// ─────────────────────────────────────────────────
+// MESSAGE-LENGTH EVALUATOR
+// Called ONCE per message, only after text is stable
+// ─────────────────────────────────────────────────
+function evaluateLength(len){
+  // Short  < 60 chars  — quick reply, calm sphere
+  // Medium 60–150      — normal sentence, moderate energy
+  // Long   > 150       — detailed answer, intense sphere
+  if(len < 60){
+    msgSpeed = 0.75;
+    msgWarp  = 0.7;
+    msgGlow  = 6;
+    msgLines = 22;
+    targetE  = 0.55;
+  } else if(len < 150){
+    msgSpeed = 1.2;
+    msgWarp  = 1.2;
+    msgGlow  = 16;
+    msgLines = 28;
+    targetE  = 0.75;
+  } else {
+    msgSpeed = 1.9;
+    msgWarp  = 2.2;
+    msgGlow  = 32;
+    msgLines = 36;
+    targetE  = 1.0;
+  }
 }
 
-// ══════════════════════════════════════════════════════
-// STEP 2 — User clicks "Annehmen".
-//
-//  The key trick:
-//  We position Cognigy's real button at EXACTLY the same
-//  screen coordinates as the "Annehmen" button BEFORE
-//  the click event fires, then programmatically re-fire
-//  the click on the Cognigy button from within the same
-//  synchronous event handler — keeping isTrusted chain intact.
-//
-//  Because we are inside a real user click handler, calling
-//  .click() on another element within the same callstack
-//  IS treated as trusted in most browsers.
-// ══════════════════════════════════════════════════════
-function accept(event) {
-  unlockAudio();
+// ─────────────────────────────────────────────────
+// TRANSCRIPT OBSERVER
+// Exact class from your screenshot:
+//   webrtc_transcript_bubble webrtc_transcript_bubble_bot
+// ─────────────────────────────────────────────────
+function findBotBubble(node){
+  var el=(node.nodeType===1)?node:node.parentElement;
+  while(el){
+    if(el.className && typeof el.className==='string' &&
+       el.className.indexOf('webrtc_transcript_bubble_bot')>=0) return el;
+    el=el.parentElement;
+  }
+  return null;
+}
 
-  // Position Cognigy's button exactly where Annehmen button is
-  // then click it — we're still inside the real user gesture
-  if(cognigyBtn) {
-    const annahmenRect = document.getElementById('btn-annehmen').getBoundingClientRect();
+function onBubbleChange(el){
+  var text=(el.textContent||'').trim();
+  if(text===lastText) return;
+  lastText=text;
 
-    // Move cognigyBtn to exact screen position of Annehmen button
-    cognigyBtn.style.cssText = `
-      position:fixed !important;
-      top:${annahmenRect.top}px !important;
-      left:${annahmenRect.left}px !important;
-      width:${annahmenRect.width}px !important;
-      height:${annahmenRect.height}px !important;
-      opacity:0 !important;
-      z-index:9999 !important;
-      pointer-events:all !important;
-      border:none !important;
-      padding:0 !important;
-      margin:0 !important;
-      cursor:pointer !important;
-    `;
-    document.body.appendChild(cognigyBtn);
-
-    // Click it — still within the user gesture callstack
-    cognigyBtn.click();
-
-    // Move it back to prison
-    setTimeout(() => {
-      cognigyBtn.style.cssText = '';
-      document.getElementById('cognigy-prison').appendChild(cognigyBtn);
-    }, 500);
+  // Mark as speaking immediately so sphere reacts during streaming
+  if(!speaking){
+    speaking=true;
+    targetE=0.65;   // base streaming energy (will be refined on complete)
   }
 
-  // Show our call UI
-  decline();
-  setTimeout(() => {
-    document.getElementById('co').classList.add('active');
-    document.getElementById('cst').textContent = 'Verbinden…';
-    startSphere();
-  }, 450);
+  // Reset the completion timer every time text changes
+  // When it fires the message is complete → evaluate length
+  clearTimeout(speakTimer);
+  speakTimer=setTimeout(function(){
+    // Message is now complete — evaluate its final length
+    var finalText=(el.textContent||'').trim();
+    evaluateLength(finalText.length);
+    console.log('[AVA] msg complete, len='+finalText.length+', speed='+msgSpeed+', warp='+msgWarp);
+
+    // Keep speaking state alive a bit longer so sphere stays energised
+    setTimeout(function(){
+      speaking=false;
+      targetE=0;
+      lastText='';
+      // Reset params for next message
+      msgSpeed=1.0; msgWarp=1.0; msgGlow=0; msgLines=28;
+    }, 1800);
+  }, 800);  // 800ms silence = message done
 }
 
-function onCallConnected(session) {
-  document.getElementById('cst').textContent = 'Verbunden';
+function startTranscriptObserver(){
+  if(transcriptObs) return;
 
-  if(session.connection) hookRemoteAudio(session.connection);
-  session.on('peerconnection', e => hookRemoteAudio(e.peerconnection));
-  session.on('addstream', e => hookStream(e.stream));
-  session.on('ended', () => {
-    document.getElementById('cst').textContent = 'Anruf beendet';
-    setTimeout(endCall, 1500);
+  transcriptObs=new MutationObserver(function(mutations){
+    for(var i=0;i<mutations.length;i++){
+      var m=mutations[i];
+
+      // New nodes added
+      for(var j=0;j<m.addedNodes.length;j++){
+        var node=m.addedNodes[j];
+        if(node.nodeType!==1) continue;
+        // Is it the bubble itself?
+        if(typeof node.className==='string' &&
+           node.className.indexOf('webrtc_transcript_bubble_bot')>=0){
+          onBubbleChange(node);
+          continue;
+        }
+        // Does it contain a bubble?
+        try{
+          var inner=node.querySelector('[class*="webrtc_transcript_bubble_bot"]');
+          if(inner) onBubbleChange(inner);
+        }catch(e){}
+      }
+
+      // Text streaming inside an existing bubble
+      if(m.type==='characterData'){
+        var bubble=findBotBubble(m.target);
+        if(bubble) onBubbleChange(bubble);
+      }
+    }
   });
+
+  transcriptObs.observe(document.body,{
+    childList:true, subtree:true, characterData:true
+  });
+  console.log('[AVA] transcript observer on');
 }
 
-function endCall() {
-  document.getElementById('co').classList.remove('active');
-  document.getElementById('cst').textContent = 'Verbinden…';
-  if(animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
-  if(micSource) { try { micSource.disconnect(); } catch(e){} micSource = null; }
-  try {
-    if(widgetRef && widgetRef.endCall) widgetRef.endCall();
-    if(widgetRef && widgetRef.hangup)  widgetRef.hangup();
-  } catch(e) {}
-}
+// ─────────────────────────────────────────────────
+// WIDGET INIT
+// ─────────────────────────────────────────────────
+window.addEventListener('load',function(){
+  if(!window.initWebRTCWidget) return;
+  var snap=new Set(Array.from(document.body.querySelectorAll('*')));
 
-function toggleMute() {
-  muted = !muted;
-  document.getElementById('muteIcon').className = muted ? 'ti ti-microphone-off' : 'ti ti-microphone';
-  document.getElementById('muteBtn').style.background = muted ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.15)';
-  document.getElementById('muteLabel').textContent = muted ? 'Ton an' : 'Stumm';
-}
-function toggleSpeaker() {
-  const b = document.getElementById('spkBtn');
-  const on = b.dataset.on === '1';
-  b.dataset.on = on ? '0' : '1';
-  b.style.background = on ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.35)';
-}
-
-// ── Sphere ──
-function getAudioLevel() {
-  if(!analyser) return 0;
-  const d = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(d);
-  let s = 0; for(let i=0;i<d.length;i++) s+=d[i];
-  return s / d.length / 255;
-}
-function startSphere() {
-  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({audio:true,video:false})
-      .then(stream => {
-        unlockAudio();
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.8;
-        micSource = audioCtx.createMediaStreamSource(stream);
-        micSource.connect(analyser);
-        renderSphere();
-      })
-      .catch(() => renderSphere());
-  } else { renderSphere(); }
-}
-function renderSphere() {
-  const W=180,H=180,cx=90,cy=90,R=72;
-  let time=0;
-  function frame() {
-    animFrame = requestAnimationFrame(frame);
-    time+=0.018; spherePhase+=0.012;
-    const raw=getAudioLevel();
-    smoothedLevel+=(raw-smoothedLevel)*0.12;
-    const energy=smoothedLevel+0.04*Math.sin(time*1.2)+0.02;
-    ctx2d.clearRect(0,0,W,H);
-    const gr=ctx2d.createRadialGradient(cx,cy,R*.3,cx,cy,R+10+energy*30);
-    gr.addColorStop(0,`rgba(120,80,255,${0.18+energy*.3})`);
-    gr.addColorStop(.5,`rgba(60,30,180,${0.10+energy*.15})`);
-    gr.addColorStop(1,'rgba(0,0,0,0)');
-    ctx2d.beginPath();ctx2d.arc(cx,cy,R+10+energy*30,0,Math.PI*2);
-    ctx2d.fillStyle=gr;ctx2d.fill();
-    const bg=ctx2d.createRadialGradient(cx-20,cy-24,4,cx,cy,R);
-    bg.addColorStop(0,`rgba(160,120,255,${.55+energy*.25})`);
-    bg.addColorStop(.45,`rgba(70,40,200,${.70+energy*.15})`);
-    bg.addColorStop(1,`rgba(10,5,60,.95)`);
-    ctx2d.beginPath();ctx2d.arc(cx,cy,R,0,Math.PI*2);
-    ctx2d.fillStyle=bg;ctx2d.fill();
-    ctx2d.save();ctx2d.beginPath();ctx2d.arc(cx,cy,R,0,Math.PI*2);ctx2d.clip();
-    for(let i=0;i<28;i++){
-      const lat=(i/28-.5)*Math.PI,ry=Math.cos(lat)*R,yOff=Math.sin(lat)*R;
-      const warp=energy*18*Math.sin(lat*3+time*2.5+i*.4);
-      ctx2d.beginPath();
-      for(let s=0;s<=64;s++){
-        const a=(s/64)*Math.PI*2;
-        const ex=cx+Math.cos(a)*ry;
-        const ey=cy+yOff+Math.sin(a)*2+Math.sin(a*3+time*1.8+i)*energy*8+warp*Math.sin(a);
-        s===0?ctx2d.moveTo(ex,ey):ctx2d.lineTo(ex,ey);
+  var btnObs=new MutationObserver(function(){
+    if(cognigyBtn) return;
+    var btns=document.querySelectorAll('button,[role="button"]');
+    for(var i=0;i<btns.length;i++){
+      var btn=btns[i];
+      if(!snap.has(btn)&&!document.getElementById('myShell').contains(btn)){
+        cognigyBtn=btn; btnObs.disconnect();
+        var root=btn.parentElement;
+        try{var r2=btn.closest('[class*="widget"],[class*="webrtc"],[id*="widget"],[id*="webrtc"]');if(r2)root=r2;}catch(e){}
+        if(root&&root!==document.body) document.getElementById('cognigy-prison').appendChild(root);
+        console.log('[AVA] button ready');
+        break;
       }
-      ctx2d.closePath();
-      ctx2d.strokeStyle=`rgba(180,140,255,${.08+energy*.22})`;
-      ctx2d.lineWidth=.8;ctx2d.stroke();
     }
-    for(let i=0;i<16;i++){
-      const ang=(i/16)*Math.PI+spherePhase*.3;
-      ctx2d.beginPath();
-      for(let s=0;s<=48;s++){
-        const lat=(s/48-.5)*Math.PI;
-        const rr=R+energy*14*Math.sin(lat*2+time*2+i*.5);
-        ctx2d.lineTo(cx+Math.cos(ang)*Math.cos(lat)*rr,cy+Math.sin(lat)*rr);
-      }
-      ctx2d.strokeStyle=`rgba(200,160,255,${.05+energy*.18})`;
-      ctx2d.lineWidth=.7;ctx2d.stroke();
-    }
-    const cr=(12+energy*28)*(1+.08*Math.sin(time*4));
-    const cg2=ctx2d.createRadialGradient(cx,cy,0,cx,cy,cr);
-    cg2.addColorStop(0,`rgba(240,220,255,${.6+energy*.4})`);
-    cg2.addColorStop(.5,`rgba(160,100,255,${.3+energy*.3})`);
-    cg2.addColorStop(1,'rgba(80,40,200,0)');
-    ctx2d.beginPath();ctx2d.arc(cx,cy,cr,0,Math.PI*2);
-    ctx2d.fillStyle=cg2;ctx2d.fill();
-    ctx2d.restore();
-    const sg=ctx2d.createRadialGradient(cx-22,cy-26,2,cx-18,cy-20,R*.55);
-    sg.addColorStop(0,'rgba(255,255,255,.30)');sg.addColorStop(.5,'rgba(255,255,255,.06)');sg.addColorStop(1,'rgba(255,255,255,0)');
-    ctx2d.beginPath();ctx2d.arc(cx,cy,R,0,Math.PI*2);ctx2d.fillStyle=sg;ctx2d.fill();
-    const rg=ctx2d.createRadialGradient(cx,cy,R*.75,cx,cy,R);
-    rg.addColorStop(0,'rgba(120,80,255,0)');
-    rg.addColorStop(.7,`rgba(140,100,255,${.06+energy*.12})`);
-    rg.addColorStop(1,`rgba(180,130,255,${.18+energy*.22})`);
-    ctx2d.beginPath();ctx2d.arc(cx,cy,R,0,Math.PI*2);ctx2d.fillStyle=rg;ctx2d.fill();
+  });
+  btnObs.observe(document.body,{childList:true,subtree:true});
+
+  window.initWebRTCWidget(
+    'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
+  ).then(function(w){
+    widgetRef=w;
+    w.on('newRTCSession',function(session){
+      document.getElementById('cst').textContent='Verbunden';
+      startTranscriptObserver();
+      session.on('ended',function(){
+        document.getElementById('cst').textContent='Anruf beendet';
+        if(transcriptObs){transcriptObs.disconnect();transcriptObs=null;}
+        speaking=false; targetE=0;
+        setTimeout(endCall,1500);
+      });
+    });
+  }).catch(function(e){console.error('[AVA]',e);});
+});
+
+// ─────────────────────────────────────────────────
+// UI ACTIONS
+// ─────────────────────────────────────────────────
+function decline(){
+  var b=document.getElementById('nb');
+  b.style.transition='transform .4s ease,opacity .4s ease';
+  b.style.transform='translateY(-160px)'; b.style.opacity='0';
+  setTimeout(function(){b.classList.remove('show');b.style.cssText='';},420);
+}
+function accept(){
+  unlockAudio();
+  if(cognigyBtn){
+    var r=document.getElementById('btn-annehmen').getBoundingClientRect();
+    cognigyBtn.style.cssText='position:fixed!important;top:'+r.top+'px!important;left:'+r.left+'px!important;width:'+r.width+'px!important;height:'+r.height+'px!important;opacity:0!important;z-index:9999!important;pointer-events:all!important;border:none!important;padding:0!important;margin:0!important;cursor:pointer!important;';
+    document.body.appendChild(cognigyBtn);
+    cognigyBtn.click();
+    setTimeout(function(){
+      cognigyBtn.style.cssText='';
+      document.getElementById('cognigy-prison').appendChild(cognigyBtn);
+    },500);
   }
-  frame();
+  decline();
+  setTimeout(function(){
+    document.getElementById('co').classList.add('active');
+    document.getElementById('cst').textContent='Verbinden…';
+    if(!sphereRunning){sphereRunning=true;drawLoop();}
+  },450);
+}
+function endCall(){
+  document.getElementById('co').classList.remove('active');
+  sphereRunning=false;
+  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
+  if(transcriptObs){transcriptObs.disconnect();transcriptObs=null;}
+  speaking=false; targetE=0; smoothE=0;
+  msgSpeed=1; msgWarp=1; msgGlow=0; msgLines=28;
+  try{if(widgetRef&&widgetRef.endCall)widgetRef.endCall();}catch(e){}
+}
+function toggleMute(){
+  muted=!muted;
+  document.getElementById('muteIcon').className=muted?'ti ti-microphone-off':'ti ti-microphone';
+  document.getElementById('muteBtn').style.background=muted?'rgba(255,59,48,.5)':'rgba(255,255,255,.13)';
+  document.getElementById('muteLabel').textContent=muted?'Ton an':'Stumm';
+}
+function toggleSpeaker(){
+  var b=document.getElementById('spkBtn'),on=b.dataset.on==='1';
+  b.dataset.on=on?'0':'1'; b.style.background=on?'rgba(255,255,255,.13)':'rgba(255,255,255,.3)';
 }
 
-function hookRemoteAudio(pc) {
-  if(!pc) return;
-  pc.addEventListener('track', e => { if(e.track.kind==='audio') hookStream(new MediaStream([e.track])); });
-  pc.addEventListener('addstream', e => hookStream(e.stream));
+// ─────────────────────────────────────────────────
+// RENDER LOOP
+// ─────────────────────────────────────────────────
+function drawLoop(){
+  if(!sphereRunning) return;
+  animFrame=requestAnimationFrame(drawLoop);
+
+  // Time advances at message-speed when speaking, slow crawl when idle
+  time += 0.016 * (speaking ? msgSpeed : 0.4);
+
+  // Smooth energy — fast attack, slow decay
+  var diff=targetE-smoothE;
+  smoothE += diff*(diff>0 ? 0.16 : 0.035);
+
+  drawSphere(smoothE);
 }
-function hookStream(stream) {
-  try {
-    unlockAudio();
-    if(!analyser){analyser=audioCtx.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=0.8;}
-    audioCtx.createMediaStreamSource(stream).connect(analyser);
-  } catch(e) {}
+
+// ─────────────────────────────────────────────────
+// SPHERE — warp and glow scale with msgWarp/msgGlow
+// ─────────────────────────────────────────────────
+function drawSphere(E){
+  var W=msgWarp;   // deformation multiplier from message length
+  ctx.clearRect(0,0,210,210);
+
+  // outer glow — radius grows with message length
+  if(E>0.03){
+    var glowR=R+10+E*20+msgGlow*E;
+    var gr=ctx.createRadialGradient(CX,CY,R*.35,CX,CY,glowR);
+    gr.addColorStop(0,'rgba(80,190,255,'+(0.11+E*.28)+')');
+    gr.addColorStop(.6,'rgba(40,100,220,'+(0.03+E*.07)+')');
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();ctx.arc(CX,CY,glowR,0,Math.PI*2);
+    ctx.fillStyle=gr;ctx.fill();
+  }
+
+  // base sphere
+  var base=ctx.createRadialGradient(CX-26,CY-30,4,CX,CY,R);
+  if(E>0.03){
+    base.addColorStop(0,'rgba(100,215,255,'+(0.62+E*.24)+')');
+    base.addColorStop(.45,'rgba(22,105,215,'+(0.74+E*.13)+')');
+    base.addColorStop(1,'rgba(4,28,95,.97)');
+  } else {
+    base.addColorStop(0,'rgba(110,85,220,.50)');
+    base.addColorStop(.45,'rgba(52,28,160,.70)');
+    base.addColorStop(1,'rgba(6,3,44,.95)');
+  }
+  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.fillStyle=base;ctx.fill();
+
+  // clip grid
+  ctx.save();
+  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);ctx.clip();
+
+  // ── latitude lines ──
+  // count comes from msgLines (22 short / 28 medium / 36 long)
+  var LATS=msgLines;
+  for(var i=0;i<LATS;i++){
+    var lat=(i/LATS-.5)*Math.PI;
+    var ry=Math.cos(lat)*R;
+    var yOff=Math.sin(lat)*R;
+    // deformation scaled by W
+    var warp=E*W*26*Math.sin(lat*4+time*3+i*.38);
+
+    ctx.beginPath();
+    for(var s=0;s<=72;s++){
+      var a=(s/72)*Math.PI*2;
+      var ex=CX+Math.cos(a)*ry;
+      var p=Math.sin(a*3+time*2.5+i*.5)*E*W*13;
+      var ey=CY+yOff+p+warp*Math.sin(a);
+      s===0?ctx.moveTo(ex,ey):ctx.lineTo(ex,ey);
+    }
+    ctx.closePath();
+    var alp=E>0.03?0.05+E*W*0.28:0.025;
+    ctx.strokeStyle=E>0.03?'rgba(80,215,255,'+alp+')':'rgba(140,115,240,'+alp+')';
+    ctx.lineWidth=0.7+W*0.2;
+    ctx.stroke();
+  }
+
+  // ── longitude lines ──
+  var LONS=Math.round(14+W*4);
+  for(var i=0;i<LONS;i++){
+    var ang=(i/LONS)*Math.PI+time*0.06;
+    ctx.beginPath();
+    for(var s=0;s<=52;s++){
+      var lat2=(s/52-.5)*Math.PI;
+      var rr=R+E*W*20*Math.sin(lat2*3+time*2.8+i*.65)+E*3;
+      ctx.lineTo(CX+Math.cos(ang)*Math.cos(lat2)*rr,CY+Math.sin(lat2)*rr);
+    }
+    var la=E>0.03?0.03+E*W*0.20:0.02;
+    ctx.strokeStyle=E>0.03?'rgba(60,200,255,'+la+')':'rgba(175,145,255,'+la+')';
+    ctx.lineWidth=0.6+W*0.15;
+    ctx.stroke();
+  }
+
+  // ── plasma core ──
+  var cR=(10+E*34*W)*(1+.12*Math.sin(time*5.5));
+  var cg=ctx.createRadialGradient(CX,CY,0,CX,CY,cR);
+  if(E>0.03){
+    cg.addColorStop(0,'rgba(190,245,255,'+(0.68+E*.33)+')');
+    cg.addColorStop(.5,'rgba(60,180,255,'+(0.28+E*.36)+')');
+    cg.addColorStop(1,'rgba(20,80,200,0)');
+  } else {
+    cg.addColorStop(0,'rgba(200,190,255,.13)');
+    cg.addColorStop(.5,'rgba(120,90,220,.05)');
+    cg.addColorStop(1,'rgba(80,40,200,0)');
+  }
+  ctx.beginPath();ctx.arc(CX,CY,cR,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
+
+  ctx.restore();
+
+  // specular
+  var sp=ctx.createRadialGradient(CX-28,CY-32,2,CX-22,CY-24,R*.5);
+  sp.addColorStop(0,'rgba(255,255,255,.30)');
+  sp.addColorStop(.55,'rgba(255,255,255,.05)');
+  sp.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);ctx.fillStyle=sp;ctx.fill();
+
+  // rim
+  var rim=ctx.createRadialGradient(CX,CY,R*.74,CX,CY,R);
+  rim.addColorStop(0,'rgba(80,60,200,0)');
+  rim.addColorStop(.68,E>0.03?'rgba(40,155,255,'+(0.07+E*.14)+')':'rgba(110,80,210,.04)');
+  rim.addColorStop(1,  E>0.03?'rgba(55,195,255,'+(0.17+E*.27)+')':'rgba(150,110,240,.08)');
+  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);ctx.fillStyle=rim;ctx.fill();
 }
 </script>
 </body>
