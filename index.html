@@ -8,7 +8,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#000;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:2rem 0;position:relative;}
-#cognigy-prison{position:fixed;top:0;left:-9999px;width:260px;height:200px;pointer-events:all;z-index:1;opacity:0;}
+#cognigy-prison{position:fixed;top:0;left:-9999px;width:260px;height:200px;pointer-events:none;z-index:1;opacity:0;}
 .shell{width:375px;height:812px;background:#000;border-radius:52px;box-shadow:0 0 0 2px #3a3a3c,0 0 0 5px #1c1c1e,0 30px 80px rgba(0,0,0,.6);position:relative;overflow:hidden;flex-shrink:0;z-index:10;}
 .screen{position:absolute;inset:0;border-radius:52px;overflow:hidden;display:flex;flex-direction:column;}
 .wp{position:absolute;inset:0;background:url('iClarified-iOS27-Celosia-Color-LockScreen.jpeg') center/cover no-repeat;z-index:0;}
@@ -32,6 +32,8 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .dock{background:rgba(255,255,255,.15);backdrop-filter:blur(20px);border-radius:26px;margin:0 16px;padding:12px 16px;display:flex;justify-content:space-around;align-items:center;}
 .di{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
 .hi{width:134px;height:5px;background:rgba(255,255,255,.35);border-radius:3px;margin:8px auto 0;display:block;}
+
+/* ── Notification banner ── */
 #nb{position:absolute;top:50px;left:16px;right:16px;z-index:200;border-radius:20px;background:rgba(28,28,30,.92);backdrop-filter:blur(30px);padding:14px 16px;transform:translateY(-160px);opacity:0;transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .55s ease;pointer-events:none;font-family:-apple-system,sans-serif;}
 #nb.show{transform:translateY(0);opacity:1;pointer-events:all;}
 .nt{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
@@ -44,19 +46,112 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 .nact{display:flex;gap:8px;margin-top:12px;}
 #btn-annehmen{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;background:#34c759;color:#fff;position:relative;z-index:5;}
 #btn-ablehnen{flex:1;padding:10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;background:rgba(255,255,255,.12);color:#fff;}
-#co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;border-radius:52px;font-family:-apple-system,sans-serif;}
+
+/* ── Call screen ── */
+#co{position:absolute;inset:0;z-index:300;background:#000;display:none;flex-direction:column;border-radius:52px;font-family:-apple-system,sans-serif;overflow:hidden;}
 #co.active{display:flex;}
+
+/* Default call view (no scene yet) */
+#co-default{display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 30px 55px;width:100%;height:100%;}
 .caller-name{font-size:28px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:4px;text-align:center;}
 .caller-status{font-size:14px;color:rgba(255,255,255,.45);text-align:center;letter-spacing:.3px;}
 #sphere-canvas{display:block;border-radius:50%;}
-.cac{display:flex;justify-content:space-around;width:100%;align-items:center;}
-.cbw{text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;}
-.cbi{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+
+/* Scene call view */
+#co-scene{display:none;flex-direction:column;width:100%;height:100%;padding:56px 22px 34px;}
+#co-scene.active{display:flex;}
+
+.scene-caller-head{text-align:center;flex-shrink:0;}
+.scene-caller-name{font-size:24px;font-weight:300;color:#fff;letter-spacing:-.3px;margin-bottom:4px;}
+.scene-caller-status{font-size:13px;color:rgba(255,255,255,.5);}
+
+.sphere-zone{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;}
+
+/* Action feed */
+.action-feed{flex-shrink:0;display:flex;flex-direction:column;gap:10px;}
+.feed-header{display:flex;align-items:center;justify-content:space-between;height:40px;flex-shrink:0;}
+.feed-side{display:flex;align-items:center;gap:8px;transition:opacity .3s ease;}
+.feed-side.dim{opacity:.4;}
+.feed-side-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#fff;background:#3a3a3c;transition:transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,background .3s ease;}
+.feed-side-icon i{font-size:15px;}
+.feed-side-icon.active{box-shadow:0 0 0 3px rgba(124,140,255,.35);}
+.feed-side-label{font-size:12px;color:#a8a8ac;font-weight:500;}
+.feed-exchange{flex:1;display:flex;justify-content:center;align-items:center;padding:0 10px;min-width:0;}
+.feed-exchange-track{position:relative;width:100%;height:2px;background:repeating-linear-gradient(90deg,#3a3a3c 0 5px,transparent 5px 10px);border-radius:1px;}
+.feed-exchange-dot{position:absolute;top:50%;left:0;width:10px;height:10px;border-radius:50%;background:#4fd68f;transform:translate(0,-50%);opacity:0;box-shadow:0 0 8px 1px rgba(79,214,143,.6);}
+.feed-exchange-dot.running{opacity:1;animation:exchangeMove 2.2s ease-in-out infinite;}
+@keyframes exchangeMove{0%{left:0;transform:translate(0,-50%);}50%{left:100%;transform:translate(-100%,-50%);}100%{left:0;transform:translate(0,-50%);}}
+.feed-divider{height:1px;background:#2a2a2e;flex-shrink:0;}
+.feed-steps{display:flex;flex-direction:column;gap:7px;min-height:112px;}
+.feed-step{display:flex;align-items:flex-start;gap:8px;transition:opacity .25s ease;}
+.feed-step i{font-size:13px;flex-shrink:0;margin-top:1px;}
+.feed-step.done i{color:#4fd68f;}
+.feed-step.current i{color:#7c8cff;}
+.feed-step.fail i{color:#8e8e93;}
+.feed-step.warn i{color:#f0a830;}
+.feed-step-text{font-size:13px;line-height:1.4;}
+.feed-step.done .feed-step-text{color:#8e8e93;}
+.feed-step.current .feed-step-text{color:#e5e5ea;font-weight:500;}
+.feed-step.fail .feed-step-text{color:#a8a8ac;}
+.feed-step.warn .feed-step-text{color:#e5c88f;}
+.feed-step.a2a .feed-step-text::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#4fd68f;margin-right:2px;vertical-align:1px;}
+
+/* Shared call controls */
+.cac{display:flex;justify-content:space-around;width:100%;align-items:center;flex-shrink:0;}
+.cbw{text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.cbi{border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
 .cbi:active{transform:scale(.92);}
-.cbi i{font-size:26px;color:#fff;}
+.cbi i{color:#fff;}
 .cbr{background:#ff3b30;}
 .cbg{background:rgba(255,255,255,.13);}
-.cbl{font-size:12px;color:rgba(255,255,255,.55);}
+.cbl{font-size:10px;color:rgba(255,255,255,.6);}
+
+/* Default view controls (64px) */
+#co-default .cbi{width:64px;height:64px;}
+#co-default .cbi i{font-size:26px;}
+#co-default .cbl{font-size:12px;color:rgba(255,255,255,.55);}
+#co-default .cac{margin-top:0;}
+
+/* Scene view controls (52px) */
+#co-scene .cbi{width:52px;height:52px;}
+#co-scene .cbi i{font-size:21px;}
+#co-scene .cac{margin-top:14px;}
+
+/* Overlay (carousel / approval) */
+#overlayLayer{position:absolute;inset:0;z-index:400;pointer-events:none;}
+#overlayLayer:not(:empty){pointer-events:all;}
+
+/* Carousel */
+.carousel-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;flex-direction:column;justify-content:flex-end;padding:0 0 30px;}
+.carousel-box{background:#0a0a0c;border-top:0.5px solid #2a2a2e;padding:16px 0 8px;}
+.carousel-title{text-align:center;font-size:12px;color:#8e8e93;margin-bottom:10px;}
+.track-wrap{overflow:hidden;padding:0 18px;}
+.track{display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1);}
+.offer-card{flex:0 0 100%;padding-right:10px;box-sizing:border-box;}
+.offer-inner{background:#1c1c1e;border-radius:16px;padding:14px;position:relative;}
+.offer-inner.rec{border:1.5px solid #4fd68f;}
+.offer-badge{position:absolute;top:-9px;left:14px;background:#4fd68f;color:#04342c;font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;}
+.offer-title{font-size:13px;font-weight:600;color:#fff;margin:4px 0 1px;}
+.offer-sub{font-size:10px;color:#8e8e93;margin-bottom:10px;}
+.offer-row{display:flex;justify-content:space-between;margin-bottom:5px;}
+.offer-row span{font-size:10px;}
+.offer-row span:first-child{color:#8e8e93;}
+.offer-row span:last-child{color:#e5e5ea;}
+.dots{display:flex;justify-content:center;gap:5px;margin-top:10px;}
+.dot{width:5px;height:5px;border-radius:50%;background:#3a3a3c;}
+.dot.active{background:#fff;}
+
+/* Approval */
+.approval-overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:0 20px;}
+.approval-card{background:#1c1c1e;border-radius:18px;padding:18px;width:100%;border:0.5px solid #3a3a3c;}
+.approval-title{font-size:14px;font-weight:600;color:#fff;margin-bottom:12px;}
+.approval-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid #2a2a2e;}
+.approval-row:last-of-type{border-bottom:none;}
+.approval-row i{font-size:14px;flex-shrink:0;}
+.approval-row.ok i{color:#4fd68f;}
+.approval-row.manual i{color:#8e8e93;}
+.approval-text{font-size:11px;color:#e5e5ea;}
+.approval-btn{margin-top:14px;width:100%;padding:11px;border-radius:12px;border:none;background:#34c759;color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -66,6 +161,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
 <div class="shell" id="myShell">
   <div class="notch"></div>
   <div class="screen">
+    <!-- Wallpaper + home screen -->
     <div class="wp"></div>
     <div class="sb">
       <span id="clk">9:41</span>
@@ -107,6 +203,7 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
       <div class="hi"></div>
     </div>
 
+    <!-- Notification banner -->
     <div id="nb">
       <div class="nt">
         <div class="nai"><i class="ti ti-sparkles"></i></div>
@@ -121,35 +218,90 @@ body{background:#000;display:flex;justify-content:center;align-items:flex-start;
       </div>
     </div>
 
+    <!-- Call screen (full overlay) -->
     <div id="co">
-      <div style="text-align:center;">
-        <div class="caller-name">AVA</div>
-        <div class="caller-status" id="cst">Verbinden…</div>
+
+      <!-- Default view: shown before any action arrives -->
+      <div id="co-default">
+        <div style="text-align:center;">
+          <div class="caller-name">AVA</div>
+          <div class="caller-status" id="cst">Verbinden…</div>
+        </div>
+        <canvas id="sphere-canvas" width="210" height="210"></canvas>
+        <div class="cac">
+          <div class="cbw" onclick="toggleMute()">
+            <div class="cbi cbg" id="muteBtn"><i class="ti ti-microphone" id="muteIcon"></i></div>
+            <div class="cbl" id="muteLabel">Stumm</div>
+          </div>
+          <div class="cbw" onclick="endCall()">
+            <div class="cbi cbr"><i class="ti ti-phone-off"></i></div>
+            <div class="cbl">Beenden</div>
+          </div>
+          <div class="cbw" onclick="toggleSpeaker()">
+            <div class="cbi cbg" id="spkBtn"><i class="ti ti-volume"></i></div>
+            <div class="cbl">Lautsprecher</div>
+          </div>
+        </div>
       </div>
-      <canvas id="sphere-canvas" width="210" height="210"></canvas>
-      <div class="cac">
-        <div class="cbw" onclick="toggleMute()">
-          <div class="cbi cbg" id="muteBtn"><i class="ti ti-microphone" id="muteIcon"></i></div>
-          <div class="cbl" id="muteLabel">Stumm</div>
+
+      <!-- Scene view: shown after action arrives -->
+      <div id="co-scene">
+        <div class="scene-caller-head">
+          <div class="scene-caller-name">AVA</div>
+          <div class="scene-caller-status">Verbunden</div>
         </div>
-        <div class="cbw" onclick="endCall()">
-          <div class="cbi cbr"><i class="ti ti-phone-off"></i></div>
-          <div class="cbl">Beenden</div>
+
+        <!-- Canvas sphere moved here when scene activates -->
+        <div class="sphere-zone" id="sceneSphereZone"></div>
+
+        <div class="action-feed">
+          <div class="feed-header" id="feedHeader">
+            <div class="feed-side" id="feedSideMine">
+              <div class="feed-side-icon" id="feedMineIcon"><i class="ti ti-sparkles"></i></div>
+              <span class="feed-side-label">AVA</span>
+            </div>
+            <div class="feed-exchange" id="feedExchange">
+              <div class="feed-exchange-track">
+                <div class="feed-exchange-dot" id="exchangeDot"></div>
+              </div>
+            </div>
+            <div class="feed-side" id="feedSidePartner">
+              <span class="feed-side-label" id="feedPartnerLabel">Anbieter</span>
+              <div class="feed-side-icon" id="feedLogo"></div>
+            </div>
+          </div>
+          <div class="feed-divider"></div>
+          <div class="feed-steps" id="feedSteps"></div>
         </div>
-        <div class="cbw" onclick="toggleSpeaker()">
-          <div class="cbi cbg" id="spkBtn"><i class="ti ti-volume"></i></div>
-          <div class="cbl">Lautsprecher</div>
+
+        <div class="cac" style="margin-top:14px;">
+          <div class="cbw" onclick="toggleMute()">
+            <div class="cbi cbg" id="muteBtnScene"><i class="ti ti-microphone" id="muteIconScene"></i></div>
+            <div class="cbl" id="muteLabelScene">Stumm</div>
+          </div>
+          <div class="cbw" onclick="endCall()">
+            <div class="cbi cbr"><i class="ti ti-phone-off"></i></div>
+            <div class="cbl">Beenden</div>
+          </div>
+          <div class="cbw" onclick="toggleSpeaker()">
+            <div class="cbi cbg" id="spkBtnScene"><i class="ti ti-volume"></i></div>
+            <div class="cbl">Lautsprecher</div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- Overlay for carousel / approval -->
+      <div id="overlayLayer"></div>
+
+    </div><!-- /#co -->
   </div>
 </div>
 
 <script src="https://github.com/Cognigy/click-to-call-widget/releases/latest/download/webRTCWidget.js"></script>
 <script>
-// ─────────────────────────────────────────────────
-// GLOBALS
-// ─────────────────────────────────────────────────
+/* ───────────────────────────────────────────────
+   STATE
+─────────────────────────────────────────────── */
 var audioCtx      = null;
 var animFrame     = null;
 var muted         = false;
@@ -158,398 +310,625 @@ var widgetRef     = null;
 var transcriptObs = null;
 var sphereRunning = false;
 var time          = 0;
+var callActive    = false;
+var notifTimer    = null;
 
-// speech / energy state
-var speaking      = false;
-var targetE       = 0;      // 0..1 energy target
-var smoothE       = 0;      // smoothed value the renderer uses
-var speakTimer    = null;   // fires when text stops changing → end of message
-var lastText      = '';     // last seen bubble text
+var speaking  = false;
+var targetE   = 0;
+var smoothE   = 0;
+var speakTimer = null;
+var lastText  = '';
 
-// ── message-length params ──
-// Set once when message is COMPLETE (text stops changing).
-// During streaming we just speak at base energy; after the
-// message is full we know its length and adjust the params.
-var msgSpeed      = 1.0;   // time multiplier
-var msgWarp       = 1.0;   // deformation scale  (1 = normal)
-var msgGlow       = 0;     // extra glow radius
-var msgLines      = 28;    // latitude line count
+var sceneTimers = [];
 
 var sc  = document.getElementById('sphere-canvas');
-var ctx = sc.getContext('2d');
-var CX  = 105, CY = 105, R = 86;
+var ctx2d = sc.getContext('2d');
+var CX = 105, CY = 105, R = 86;
 
-// ─────────────────────────────────────────────────
-// CLOCK
-// ─────────────────────────────────────────────────
-function updateClock(){
-  var n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0');
-  document.getElementById('clk').textContent=h+':'+m;
-  var t=document.getElementById('timeLine');if(t)t.textContent=h+':'+m;
+/* ───────────────────────────────────────────────
+   CLOCK
+─────────────────────────────────────────────── */
+function updateClock() {
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2,'0');
+  var m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clk').textContent = h + ':' + m;
+  var t = document.getElementById('timeLine');
+  if (t) t.textContent = h + ':' + m;
 }
-function updateDate(){
-  var D=['So','Mo','Di','Mi','Do','Fr','Sa'],
-      M=['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'],
-      n=new Date(),d=document.getElementById('dateLine');
-  if(d)d.textContent=D[n.getDay()]+'. '+n.getDate()+'. '+M[n.getMonth()];
+function updateDate() {
+  var D = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  var M = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
+  var now = new Date();
+  var d = document.getElementById('dateLine');
+  if (d) d.textContent = D[now.getDay()] + '. ' + now.getDate() + '. ' + M[now.getMonth()];
 }
-updateClock();updateDate();setInterval(updateClock,30000);
+function schedClock() {
+  updateClock();
+  var now = new Date();
+  setTimeout(schedClock, (60 - now.getSeconds()) * 1000 - now.getMilliseconds());
+}
+schedClock();
+updateDate();
 
-// ─────────────────────────────────────────────────
-// AUDIO — notification only
-// ─────────────────────────────────────────────────
-function unlockAudio(){if(audioCtx)return;audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
-['click','touchstart','mousemove'].forEach(function(e){document.addEventListener(e,unlockAudio,{once:true});});
+/* ───────────────────────────────────────────────
+   AUDIO
+─────────────────────────────────────────────── */
+function unlockAudio() {
+  if (audioCtx) { audioCtx.resume(); return; }
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+['click','touchstart','mousemove'].forEach(function(e) {
+  document.addEventListener(e, unlockAudio, { once: true });
+});
 
-function playNotifSound(){
-  try{
+function playNotifSound() {
+  try {
     unlockAudio();
-    var notes=[{f:1047,s:0,d:.12},{f:1319,s:.14,d:.12},{f:1568,s:.28,d:.18},
-               {f:1047,s:.55,d:.12},{f:1319,s:.69,d:.12},{f:1568,s:.83,d:.18}];
-    for(var i=0;i<notes.length;i++){
-      var n=notes[i],o=audioCtx.createOscillator(),g=audioCtx.createGain();
-      o.connect(g);g.connect(audioCtx.destination);o.type='sine';
-      var t=audioCtx.currentTime+n.s;
-      o.frequency.setValueAtTime(n.f,t);
-      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.28,t+.02);
-      g.gain.setValueAtTime(.28,t+n.d-.04);g.gain.linearRampToValueAtTime(0,t+n.d);
-      o.start(t);o.stop(t+n.d+.01);
-    }
-  }catch(e){}
+    var notes = [{f:1047,s:0,d:.12},{f:1319,s:.14,d:.12},{f:1568,s:.28,d:.18},
+                 {f:1047,s:.55,d:.12},{f:1319,s:.69,d:.12},{f:1568,s:.83,d:.18}];
+    notes.forEach(function(n) {
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination); o.type = 'sine';
+      var t = audioCtx.currentTime + n.s;
+      o.frequency.setValueAtTime(n.f, t);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(.28, t + .02);
+      g.gain.setValueAtTime(.28, t + n.d - .04);
+      g.gain.linearRampToValueAtTime(0, t + n.d);
+      o.start(t); o.stop(t + n.d + .01);
+    });
+  } catch(e) {}
 }
 
-setTimeout(function(){
-  var n=new Date();
-  document.getElementById('ntm').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+/* ───────────────────────────────────────────────
+   NOTIFICATION
+─────────────────────────────────────────────── */
+notifTimer = setTimeout(function() {
+  if (callActive) return;
+  var now = new Date();
+  document.getElementById('ntm').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
   document.getElementById('nb').classList.add('show');
   playNotifSound();
-},10000);
+}, 10000);
 
-// ─────────────────────────────────────────────────
-// MESSAGE-LENGTH EVALUATOR
-// Called ONCE per message, only after text is stable
-// ─────────────────────────────────────────────────
-function evaluateLength(len){
-  // Short  < 60 chars  — quick reply, calm sphere
-  // Medium 60–150      — normal sentence, moderate energy
-  // Long   > 150       — detailed answer, intense sphere
-  if(len < 60){
-    msgSpeed = 0.75;
-    msgWarp  = 0.7;
-    msgGlow  = 6;
-    msgLines = 22;
-    targetE  = 0.55;
-  } else if(len < 150){
-    msgSpeed = 1.2;
-    msgWarp  = 1.2;
-    msgGlow  = 16;
-    msgLines = 28;
-    targetE  = 0.75;
-  } else {
-    msgSpeed = 1.9;
-    msgWarp  = 2.2;
-    msgGlow  = 32;
-    msgLines = 36;
-    targetE  = 1.0;
-  }
-}
-
-// ─────────────────────────────────────────────────
-// TRANSCRIPT OBSERVER
-// Exact class from your screenshot:
-//   webrtc_transcript_bubble webrtc_transcript_bubble_bot
-// ─────────────────────────────────────────────────
-function findBotBubble(node){
-  var el=(node.nodeType===1)?node:node.parentElement;
-  while(el){
-    if(el.className && typeof el.className==='string' &&
-       el.className.indexOf('webrtc_transcript_bubble_bot')>=0) return el;
-    el=el.parentElement;
+/* ───────────────────────────────────────────────
+   TRANSCRIPT OBSERVER
+─────────────────────────────────────────────── */
+function findBotBubble(node) {
+  var el = (node.nodeType === 1) ? node : node.parentElement;
+  while (el) {
+    if (el.className && typeof el.className === 'string' &&
+        el.className.indexOf('webrtc_transcript_bubble_bot') >= 0) return el;
+    el = el.parentElement;
   }
   return null;
 }
 
-function onBubbleChange(el){
-  var text=(el.textContent||'').trim();
-  if(text===lastText) return;
-  lastText=text;
-
-  // Mark as speaking immediately so sphere reacts during streaming
-  if(!speaking){
-    speaking=true;
-    targetE=0.65;   // base streaming energy (will be refined on complete)
-  }
-
-  // Reset the completion timer every time text changes
-  // When it fires the message is complete → evaluate length
+function onBotActivity(el) {
+  var text = (el.textContent || '').trim();
+  if (text === lastText) return;
+  lastText = text;
+  speaking = true;
+  targetE = 0.75;
   clearTimeout(speakTimer);
-  speakTimer=setTimeout(function(){
-    // Message is now complete — evaluate its final length
-    var finalText=(el.textContent||'').trim();
-    evaluateLength(finalText.length);
-    console.log('[AVA] msg complete, len='+finalText.length+', speed='+msgSpeed+', warp='+msgWarp);
-
-    // Keep speaking state alive a bit longer so sphere stays energised
-    setTimeout(function(){
-      speaking=false;
-      targetE=0;
-      lastText='';
-      // Reset params for next message
-      msgSpeed=1.0; msgWarp=1.0; msgGlow=0; msgLines=28;
-    }, 1800);
-  }, 800);  // 800ms silence = message done
+  speakTimer = setTimeout(function() {
+    speaking = false; targetE = 0; lastText = '';
+  }, 1400);
 }
 
-function startTranscriptObserver(){
-  if(transcriptObs) return;
-
-  transcriptObs=new MutationObserver(function(mutations){
-    for(var i=0;i<mutations.length;i++){
-      var m=mutations[i];
-
-      // New nodes added
-      for(var j=0;j<m.addedNodes.length;j++){
-        var node=m.addedNodes[j];
-        if(node.nodeType!==1) continue;
-        // Is it the bubble itself?
-        if(typeof node.className==='string' &&
-           node.className.indexOf('webrtc_transcript_bubble_bot')>=0){
-          onBubbleChange(node);
-          continue;
+function startTranscriptObserver() {
+  if (transcriptObs) return;
+  transcriptObs = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        if (typeof node.className === 'string' &&
+            node.className.indexOf('webrtc_transcript_bubble_bot') >= 0) {
+          onBotActivity(node); return;
         }
-        // Does it contain a bubble?
-        try{
-          var inner=node.querySelector('[class*="webrtc_transcript_bubble_bot"]');
-          if(inner) onBubbleChange(inner);
-        }catch(e){}
+        try {
+          var inner = node.querySelector('[class*="webrtc_transcript_bubble_bot"]');
+          if (inner) onBotActivity(inner);
+        } catch(e) {}
+      });
+      if (m.type === 'characterData') {
+        var bubble = findBotBubble(m.target);
+        if (bubble) onBotActivity(bubble);
       }
-
-      // Text streaming inside an existing bubble
-      if(m.type==='characterData'){
-        var bubble=findBotBubble(m.target);
-        if(bubble) onBubbleChange(bubble);
-      }
-    }
+    });
   });
-
-  transcriptObs.observe(document.body,{
-    childList:true, subtree:true, characterData:true
-  });
-  console.log('[AVA] transcript observer on');
+  transcriptObs.observe(document.body, { childList: true, subtree: true, characterData: true });
 }
 
-// ─────────────────────────────────────────────────
-// WIDGET INIT
-// ─────────────────────────────────────────────────
-window.addEventListener('load',function(){
-  if(!window.initWebRTCWidget) return;
-  var snap=new Set(Array.from(document.body.querySelectorAll('*')));
+/* ───────────────────────────────────────────────
+   WIDGET INIT
+─────────────────────────────────────────────── */
+window.addEventListener('load', function() {
+  if (!window.initWebRTCWidget) return;
+  var snap = new Set(Array.from(document.body.querySelectorAll('*')));
 
-  var btnObs=new MutationObserver(function(){
-    if(cognigyBtn) return;
-    var btns=document.querySelectorAll('button,[role="button"]');
-    for(var i=0;i<btns.length;i++){
-      var btn=btns[i];
-      if(!snap.has(btn)&&!document.getElementById('myShell').contains(btn)){
-        cognigyBtn=btn; btnObs.disconnect();
-        var root=btn.parentElement;
-        try{var r2=btn.closest('[class*="widget"],[class*="webrtc"],[id*="widget"],[id*="webrtc"]');if(r2)root=r2;}catch(e){}
-        if(root&&root!==document.body) document.getElementById('cognigy-prison').appendChild(root);
-        console.log('[AVA] button ready');
+  var btnObs = new MutationObserver(function() {
+    if (cognigyBtn) return;
+    var btns = document.querySelectorAll('button,[role="button"]');
+    for (var i = 0; i < btns.length; i++) {
+      var btn = btns[i];
+      if (!snap.has(btn) && !document.getElementById('myShell').contains(btn)) {
+        cognigyBtn = btn;
+        btnObs.disconnect();
+        var root = btn.parentElement;
+        try {
+          var r2 = btn.closest('[class*="widget"],[class*="webrtc"],[id*="widget"],[id*="webrtc"]');
+          if (r2) root = r2;
+        } catch(e) {}
+        if (root && root !== document.body)
+          document.getElementById('cognigy-prison').appendChild(root);
         break;
       }
     }
   });
-  btnObs.observe(document.body,{childList:true,subtree:true});
+  btnObs.observe(document.body, { childList: true, subtree: true });
 
   window.initWebRTCWidget(
     'https://endpoint-trial.cognigy.ai/2f324835155e6badd2654ab8cf7952cc903b99682afedfb44febb73535607b96'
-  ).then(function(w){
-    widgetRef=w;
-    w.on('newRTCSession',function(session){
-      document.getElementById('cst').textContent='Verbunden';
+  ).then(function(w) {
+    widgetRef = w;
+    w.on('newRTCSession', function(session) {
+      document.getElementById('cst').textContent = 'Verbunden';
       startTranscriptObserver();
-      session.on('ended',function(){
-        document.getElementById('cst').textContent='Anruf beendet';
-        if(transcriptObs){transcriptObs.disconnect();transcriptObs=null;}
-        speaking=false; targetE=0;
-        setTimeout(endCall,1500);
+
+      /* ── SIP INFO → scene switching ── */
+      session.on('newInfo', function(infoEvent) {
+        try {
+          var data = JSON.parse(infoEvent.request.body);
+          var idx = scenes.findIndex(function(s) { return s.action === data.action; });
+          if (idx !== -1) activateScene(idx);
+        } catch(e) { console.warn('SIP INFO parse error:', e); }
+      });
+
+      session.on('ended', function() {
+        document.getElementById('cst').textContent = 'Anruf beendet';
+        if (transcriptObs) { transcriptObs.disconnect(); transcriptObs = null; }
+        speaking = false; targetE = 0;
+        setTimeout(endCall, 1500);
       });
     });
-  }).catch(function(e){console.error('[AVA]',e);});
+  }).catch(function(e) { console.error('[AVA]', e); });
 });
 
-// ─────────────────────────────────────────────────
-// UI ACTIONS
-// ─────────────────────────────────────────────────
-function decline(){
-  var b=document.getElementById('nb');
-  b.style.transition='transform .4s ease,opacity .4s ease';
-  b.style.transform='translateY(-160px)'; b.style.opacity='0';
-  setTimeout(function(){b.classList.remove('show');b.style.cssText='';},420);
+/* ───────────────────────────────────────────────
+   NOTIFICATION ACTIONS
+─────────────────────────────────────────────── */
+function decline() {
+  clearTimeout(notifTimer);
+  var b = document.getElementById('nb');
+  b.style.transition = 'transform .4s ease,opacity .4s ease';
+  b.style.transform = 'translateY(-160px)';
+  b.style.opacity = '0';
+  setTimeout(function() { b.classList.remove('show'); b.style.cssText = ''; }, 420);
 }
-function accept(){
+
+function accept() {
+  callActive = true;
+  clearTimeout(notifTimer);
   unlockAudio();
-  if(cognigyBtn){
-    var r=document.getElementById('btn-annehmen').getBoundingClientRect();
-    cognigyBtn.style.cssText='position:fixed!important;top:'+r.top+'px!important;left:'+r.left+'px!important;width:'+r.width+'px!important;height:'+r.height+'px!important;opacity:0!important;z-index:9999!important;pointer-events:all!important;border:none!important;padding:0!important;margin:0!important;cursor:pointer!important;';
+
+  if (cognigyBtn) {
+    var r = document.getElementById('btn-annehmen').getBoundingClientRect();
+    cognigyBtn.style.cssText = 'position:fixed!important;top:' + r.top + 'px!important;left:' + r.left + 'px!important;width:' + r.width + 'px!important;height:' + r.height + 'px!important;opacity:0!important;z-index:9999!important;pointer-events:all!important;border:none!important;padding:0!important;margin:0!important;cursor:pointer!important;';
     document.body.appendChild(cognigyBtn);
     cognigyBtn.click();
-    setTimeout(function(){
-      cognigyBtn.style.cssText='';
+    setTimeout(function() {
+      cognigyBtn.style.cssText = '';
       document.getElementById('cognigy-prison').appendChild(cognigyBtn);
-    },500);
+    }, 500);
   }
+
   decline();
-  setTimeout(function(){
+  setTimeout(function() {
     document.getElementById('co').classList.add('active');
-    document.getElementById('cst').textContent='Verbinden…';
-    if(!sphereRunning){sphereRunning=true;drawLoop();}
-  },450);
+    document.getElementById('cst').textContent = 'Verbinden…';
+    if (!sphereRunning) { sphereRunning = true; drawLoop(); }
+  }, 450);
 }
-function endCall(){
+
+function endCall() {
+  if (!callActive) return;
+  callActive = false;
   document.getElementById('co').classList.remove('active');
-  sphereRunning=false;
-  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
-  if(transcriptObs){transcriptObs.disconnect();transcriptObs=null;}
-  speaking=false; targetE=0; smoothE=0;
-  msgSpeed=1; msgWarp=1; msgGlow=0; msgLines=28;
-  try{if(widgetRef&&widgetRef.endCall)widgetRef.endCall();}catch(e){}
-}
-function toggleMute(){
-  muted=!muted;
-  document.getElementById('muteIcon').className=muted?'ti ti-microphone-off':'ti ti-microphone';
-  document.getElementById('muteBtn').style.background=muted?'rgba(255,59,48,.5)':'rgba(255,255,255,.13)';
-  document.getElementById('muteLabel').textContent=muted?'Ton an':'Stumm';
-}
-function toggleSpeaker(){
-  var b=document.getElementById('spkBtn'),on=b.dataset.on==='1';
-  b.dataset.on=on?'0':'1'; b.style.background=on?'rgba(255,255,255,.13)':'rgba(255,255,255,.3)';
+  sphereRunning = false;
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  if (transcriptObs) { transcriptObs.disconnect(); transcriptObs = null; }
+  speaking = false; targetE = 0; smoothE = 0;
+  clearSceneTimers();
+  // Reset to default view
+  document.getElementById('co-default').style.display = 'flex';
+  document.getElementById('co-scene').classList.remove('active');
+  document.getElementById('co-default').appendChild(sc); // return canvas
+  document.getElementById('overlayLayer').innerHTML = '';
+  try { if (widgetRef && widgetRef.endCall) widgetRef.endCall(); } catch(e) {}
 }
 
-// ─────────────────────────────────────────────────
-// RENDER LOOP
-// ─────────────────────────────────────────────────
-function drawLoop(){
-  if(!sphereRunning) return;
-  animFrame=requestAnimationFrame(drawLoop);
+function toggleMute() {
+  muted = !muted;
+  ['muteIcon','muteIconScene'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.className = muted ? 'ti ti-microphone-off' : 'ti ti-microphone';
+  });
+  ['muteBtn','muteBtnScene'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.background = muted ? 'rgba(255,59,48,.5)' : 'rgba(255,255,255,.13)';
+  });
+  ['muteLabel','muteLabelScene'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = muted ? 'Ton an' : 'Stumm';
+  });
+}
 
-  // Time advances at message-speed when speaking, slow crawl when idle
-  time += 0.016 * (speaking ? msgSpeed : 0.4);
+function toggleSpeaker() {
+  ['spkBtn','spkBtnScene'].forEach(function(id) {
+    var b = document.getElementById(id);
+    if (!b) return;
+    var on = b.dataset.on === '1';
+    b.dataset.on = on ? '0' : '1';
+    b.style.background = on ? 'rgba(255,255,255,.13)' : 'rgba(255,255,255,.3)';
+  });
+}
 
-  // Smooth energy — fast attack, slow decay
-  var diff=targetE-smoothE;
-  smoothE += diff*(diff>0 ? 0.16 : 0.035);
-
+/* ───────────────────────────────────────────────
+   SPHERE RENDER
+─────────────────────────────────────────────── */
+function drawLoop(ts) {
+  if (!sphereRunning) return;
+  animFrame = requestAnimationFrame(drawLoop);
+  time += 0.016;
+  var diff = targetE - smoothE;
+  smoothE += diff * (diff > 0 ? 0.18 : 0.04);
   drawSphere(smoothE);
 }
 
-// ─────────────────────────────────────────────────
-// SPHERE — warp and glow scale with msgWarp/msgGlow
-// ─────────────────────────────────────────────────
-function drawSphere(E){
-  var W=msgWarp;   // deformation multiplier from message length
-  ctx.clearRect(0,0,210,210);
-
-  // outer glow — radius grows with message length
-  if(E>0.03){
-    var glowR=R+10+E*20+msgGlow*E;
-    var gr=ctx.createRadialGradient(CX,CY,R*.35,CX,CY,glowR);
-    gr.addColorStop(0,'rgba(80,190,255,'+(0.11+E*.28)+')');
-    gr.addColorStop(.6,'rgba(40,100,220,'+(0.03+E*.07)+')');
-    gr.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.beginPath();ctx.arc(CX,CY,glowR,0,Math.PI*2);
-    ctx.fillStyle=gr;ctx.fill();
+function drawSphere(E) {
+  ctx2d.clearRect(0, 0, 210, 210);
+  if (E > 0.03) {
+    var gr = ctx2d.createRadialGradient(CX, CY, R * .35, CX, CY, R + 12 + E * 22);
+    gr.addColorStop(0, 'rgba(80,190,255,' + (0.12 + E * .28) + ')');
+    gr.addColorStop(.6, 'rgba(40,100,220,' + (0.03 + E * .08) + ')');
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx2d.beginPath(); ctx2d.arc(CX, CY, R + 12 + E * 22, 0, Math.PI * 2);
+    ctx2d.fillStyle = gr; ctx2d.fill();
   }
-
-  // base sphere
-  var base=ctx.createRadialGradient(CX-26,CY-30,4,CX,CY,R);
-  if(E>0.03){
-    base.addColorStop(0,'rgba(100,215,255,'+(0.62+E*.24)+')');
-    base.addColorStop(.45,'rgba(22,105,215,'+(0.74+E*.13)+')');
-    base.addColorStop(1,'rgba(4,28,95,.97)');
+  var base = ctx2d.createRadialGradient(CX - 26, CY - 30, 4, CX, CY, R);
+  if (E > 0.03) {
+    base.addColorStop(0, 'rgba(100,215,255,' + (0.62 + E * .25) + ')');
+    base.addColorStop(.45, 'rgba(22,105,215,' + (0.74 + E * .14) + ')');
+    base.addColorStop(1, 'rgba(4,28,95,.97)');
   } else {
-    base.addColorStop(0,'rgba(110,85,220,.50)');
-    base.addColorStop(.45,'rgba(52,28,160,.70)');
-    base.addColorStop(1,'rgba(6,3,44,.95)');
+    base.addColorStop(0, 'rgba(110,85,220,.50)');
+    base.addColorStop(.45, 'rgba(52,28,160,.70)');
+    base.addColorStop(1, 'rgba(6,3,44,.95)');
   }
-  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);
-  ctx.fillStyle=base;ctx.fill();
-
-  // clip grid
-  ctx.save();
-  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);ctx.clip();
-
-  // ── latitude lines ──
-  // count comes from msgLines (22 short / 28 medium / 36 long)
-  var LATS=msgLines;
-  for(var i=0;i<LATS;i++){
-    var lat=(i/LATS-.5)*Math.PI;
-    var ry=Math.cos(lat)*R;
-    var yOff=Math.sin(lat)*R;
-    // deformation scaled by W
-    var warp=E*W*26*Math.sin(lat*4+time*3+i*.38);
-
-    ctx.beginPath();
-    for(var s=0;s<=72;s++){
-      var a=(s/72)*Math.PI*2;
-      var ex=CX+Math.cos(a)*ry;
-      var p=Math.sin(a*3+time*2.5+i*.5)*E*W*13;
-      var ey=CY+yOff+p+warp*Math.sin(a);
-      s===0?ctx.moveTo(ex,ey):ctx.lineTo(ex,ey);
+  ctx2d.beginPath(); ctx2d.arc(CX, CY, R, 0, Math.PI * 2);
+  ctx2d.fillStyle = base; ctx2d.fill();
+  ctx2d.save();
+  ctx2d.beginPath(); ctx2d.arc(CX, CY, R, 0, Math.PI * 2); ctx2d.clip();
+  for (var i = 0; i < 28; i++) {
+    var lat = (i / 28 - .5) * Math.PI;
+    var ry = Math.cos(lat) * R;
+    var yOff = Math.sin(lat) * R;
+    var warp = E * 26 * Math.sin(lat * 4 + time * 3 + i * .38);
+    ctx2d.beginPath();
+    for (var s = 0; s <= 72; s++) {
+      var a = (s / 72) * Math.PI * 2;
+      var ex = CX + Math.cos(a) * ry;
+      var p = Math.sin(a * 3 + time * 2.5 + i * .5) * E * 13;
+      var ey = CY + yOff + p + warp * Math.sin(a);
+      s === 0 ? ctx2d.moveTo(ex, ey) : ctx2d.lineTo(ex, ey);
     }
-    ctx.closePath();
-    var alp=E>0.03?0.05+E*W*0.28:0.025;
-    ctx.strokeStyle=E>0.03?'rgba(80,215,255,'+alp+')':'rgba(140,115,240,'+alp+')';
-    ctx.lineWidth=0.7+W*0.2;
-    ctx.stroke();
+    ctx2d.closePath();
+    var alp = E > 0.03 ? 0.05 + E * 0.32 : 0.025;
+    ctx2d.strokeStyle = E > 0.03 ? 'rgba(80,215,255,' + alp + ')' : 'rgba(140,115,240,' + alp + ')';
+    ctx2d.lineWidth = 0.8; ctx2d.stroke();
   }
-
-  // ── longitude lines ──
-  var LONS=Math.round(14+W*4);
-  for(var i=0;i<LONS;i++){
-    var ang=(i/LONS)*Math.PI+time*0.06;
-    ctx.beginPath();
-    for(var s=0;s<=52;s++){
-      var lat2=(s/52-.5)*Math.PI;
-      var rr=R+E*W*20*Math.sin(lat2*3+time*2.8+i*.65)+E*3;
-      ctx.lineTo(CX+Math.cos(ang)*Math.cos(lat2)*rr,CY+Math.sin(lat2)*rr);
+  for (var i = 0; i < 16; i++) {
+    var ang = (i / 16) * Math.PI + time * 0.06;
+    ctx2d.beginPath();
+    for (var s = 0; s <= 52; s++) {
+      var lat2 = (s / 52 - .5) * Math.PI;
+      var rr = R + E * 20 * Math.sin(lat2 * 3 + time * 2.8 + i * .65) + E * 4;
+      ctx2d.lineTo(CX + Math.cos(ang) * Math.cos(lat2) * rr, CY + Math.sin(lat2) * rr);
     }
-    var la=E>0.03?0.03+E*W*0.20:0.02;
-    ctx.strokeStyle=E>0.03?'rgba(60,200,255,'+la+')':'rgba(175,145,255,'+la+')';
-    ctx.lineWidth=0.6+W*0.15;
-    ctx.stroke();
+    var la = E > 0.03 ? 0.03 + E * 0.22 : 0.02;
+    ctx2d.strokeStyle = E > 0.03 ? 'rgba(60,200,255,' + la + ')' : 'rgba(175,145,255,' + la + ')';
+    ctx2d.lineWidth = 0.65; ctx2d.stroke();
   }
-
-  // ── plasma core ──
-  var cR=(10+E*34*W)*(1+.12*Math.sin(time*5.5));
-  var cg=ctx.createRadialGradient(CX,CY,0,CX,CY,cR);
-  if(E>0.03){
-    cg.addColorStop(0,'rgba(190,245,255,'+(0.68+E*.33)+')');
-    cg.addColorStop(.5,'rgba(60,180,255,'+(0.28+E*.36)+')');
-    cg.addColorStop(1,'rgba(20,80,200,0)');
+  var cR = (10 + E * 34) * (1 + .12 * Math.sin(time * 5.5));
+  var cg = ctx2d.createRadialGradient(CX, CY, 0, CX, CY, cR);
+  if (E > 0.03) {
+    cg.addColorStop(0, 'rgba(190,245,255,' + (0.68 + E * .33) + ')');
+    cg.addColorStop(.5, 'rgba(60,180,255,' + (0.28 + E * .36) + ')');
+    cg.addColorStop(1, 'rgba(20,80,200,0)');
   } else {
-    cg.addColorStop(0,'rgba(200,190,255,.13)');
-    cg.addColorStop(.5,'rgba(120,90,220,.05)');
-    cg.addColorStop(1,'rgba(80,40,200,0)');
+    cg.addColorStop(0, 'rgba(200,190,255,.14)');
+    cg.addColorStop(.5, 'rgba(120,90,220,.06)');
+    cg.addColorStop(1, 'rgba(80,40,200,0)');
   }
-  ctx.beginPath();ctx.arc(CX,CY,cR,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
+  ctx2d.beginPath(); ctx2d.arc(CX, CY, cR, 0, Math.PI * 2);
+  ctx2d.fillStyle = cg; ctx2d.fill();
+  ctx2d.restore();
+  var sp = ctx2d.createRadialGradient(CX - 28, CY - 32, 2, CX - 22, CY - 24, R * .5);
+  sp.addColorStop(0, 'rgba(255,255,255,.30)');
+  sp.addColorStop(.55, 'rgba(255,255,255,.05)');
+  sp.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx2d.beginPath(); ctx2d.arc(CX, CY, R, 0, Math.PI * 2);
+  ctx2d.fillStyle = sp; ctx2d.fill();
+  var rim = ctx2d.createRadialGradient(CX, CY, R * .74, CX, CY, R);
+  rim.addColorStop(0, 'rgba(80,60,200,0)');
+  rim.addColorStop(.68, E > 0.03 ? 'rgba(40,155,255,' + (0.07 + E * .15) + ')' : 'rgba(110,80,210,.04)');
+  rim.addColorStop(1,  E > 0.03 ? 'rgba(55,195,255,' + (0.18 + E * .28) + ')' : 'rgba(150,110,240,.08)');
+  ctx2d.beginPath(); ctx2d.arc(CX, CY, R, 0, Math.PI * 2);
+  ctx2d.fillStyle = rim; ctx2d.fill();
+}
 
-  ctx.restore();
+/* ───────────────────────────────────────────────
+   SCENES
+─────────────────────────────────────────────── */
+var scenes = [
+  {
+    id: 1, action: 'anruf',
+    animatedSequence: [
+      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "current" }], noPartner: true, duration: 1400 },
+      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "done" }, { text: "Objektdaten abgeglichen", state: "current" }], noPartner: true, duration: 1400 },
+      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "done" }, { text: "Objektdaten abgeglichen", state: "done" }, { text: "Grundbuch-Status abgerufen", state: "current" }], noPartner: true, duration: 1400 },
+      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "done" }, { text: "Objektdaten abgeglichen", state: "done" }, { text: "Grundbuch-Status abgerufen", state: "done" }, { text: "Aktive Verträge erfasst", state: "current" }], noPartner: true, duration: 1400 },
+      { steps: [{ text: "Notarieller Kaufvertrag geprüft", state: "done" }, { text: "Objektdaten abgeglichen", state: "done" }, { text: "Grundbuch-Status abgerufen", state: "done" }, { text: "Aktive Verträge erfasst", state: "done" }], noPartner: true, duration: 1400 }
+    ]
+  },
+  {
+    id: 2, action: 'energy',
+    logo: 'V', logoColor: '#e60000', logoLabel: 'Anbieter 1',
+    animatedSequence: [
+      { steps: [{ text: "Verbrauchsprognose berechnet", state: "done" }, { text: "Fragt Anbieter 1 an", state: "current" }], speaker: 'mine', exchange: true, duration: 1800 },
+      { steps: [{ text: "Verbrauchsprognose berechnet", state: "done" }, { text: "Anbieter 1 antwortet", state: "current" }], speaker: 'partner', exchange: true, duration: 1600 },
+      { steps: [{ text: "Verbrauchsprognose berechnet", state: "done" }, { text: "Angebot 1 erhalten", state: "done", a2a: true }], speaker: 'partner', exchange: false, pulse: true, duration: 2000 },
+      { steps: [{ text: "Angebot 1 erhalten", state: "done", a2a: true }, { text: "Fragt Anbieter 2 an", state: "current" }], speaker: 'mine', exchange: true, duration: 1800, logo: 'B', logoColor: '#0074d9', logoLabel: 'Anbieter 2' },
+      { steps: [{ text: "Angebot 1 erhalten", state: "done", a2a: true }, { text: "Anbieter 2 antwortet", state: "current" }], speaker: 'partner', exchange: true, duration: 1600 },
+      { steps: [{ text: "Angebot 1 erhalten", state: "done", a2a: true }, { text: "Angebot 2 erhalten", state: "done", a2a: true }], speaker: 'partner', exchange: false, pulse: true, duration: 2000 },
+      { steps: [{ text: "Angebot 2 erhalten", state: "done", a2a: true }, { text: "Fragt Anbieter 3 an", state: "current" }], speaker: 'mine', exchange: true, duration: 1800, logo: 'C', logoColor: '#f0a830', logoLabel: 'Anbieter 3' },
+      { steps: [{ text: "Angebot 2 erhalten", state: "done", a2a: true }, { text: "Anbieter 3 antwortet", state: "current" }], speaker: 'partner', exchange: true, duration: 1600 },
+      { steps: [{ text: "Angebot 2 erhalten", state: "done", a2a: true }, { text: "Angebot 3 erhalten", state: "done", a2a: true }], speaker: 'partner', exchange: false, pulse: true, duration: 2200 },
+      { steps: [{ text: "Angebot 1 erhalten", state: "done", a2a: true }, { text: "Angebot 2 erhalten", state: "done", a2a: true }, { text: "Angebot 3 erhalten", state: "done", a2a: true }], speaker: 'mine', exchange: false, duration: 900, openCarousel: true }
+    ]
+  },
+  {
+    id: 3, action: 'versicherung',
+    logo: null, logoIcon: 'ti-building-bank', logoColor: '#0f6e56', logoLabel: 'Alternativer Versicherer',
+    animatedSequence: [
+      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Agenten-Endpunkt Versicherer wird gesucht ...", state: "current" }], noPartner: true, duration: 3200 },
+      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Bestandsversicherer nicht erreichbar", state: "fail" }], noPartner: true, duration: 2600 },
+      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Bestandsversicherer nicht erreichbar", state: "fail" }, { text: "Zweitversuch über Branchenverzeichnis", state: "fail" }, { text: "Fallback: manuelle Bearbeitung vorbereitet", state: "warn" }], noPartner: true, duration: 3400 },
+      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Bestandsversicherer nicht erreichbar", state: "fail" }, { text: "Zweitversuch über Branchenverzeichnis", state: "fail" }, { text: "Fallback: manuelle Bearbeitung vorbereitet", state: "warn" }, { text: "Fragt alternative Versicherer an", state: "current" }], speaker: 'mine', exchange: true, duration: 3300 },
+      { steps: [{ text: "Gefährdungszone und Fristbeginn geprüft", state: "done" }, { text: "Bestandsversicherer nicht erreichbar", state: "fail" }, { text: "Zweitversuch über Branchenverzeichnis", state: "fail" }, { text: "Fallback: manuelle Bearbeitung vorbereitet", state: "warn" }, { text: "Zwei Gegenangebote erhalten", state: "done", a2a: true }], speaker: 'partner', exchange: false, pulse: true, duration: 4200 }
+    ]
+  },
+  {
+    id: 4, action: 'glasfaser',
+    animatedSequence: [
+      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "current" }], noPartner: true, duration: 1600 },
+      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "current" }], noPartner: true, duration: 1600 },
+      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "done" }, { text: "Router-Kompatibilität geprüft — zu langsam", state: "fail" }], noPartner: true, duration: 1800 },
+      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "done" }, { text: "Router-Kompatibilität geprüft — zu langsam", state: "fail" }, { text: "Passenden Router gefunden", state: "current" }], noPartner: true, duration: 1600 },
+      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "done" }, { text: "Router-Kompatibilität geprüft — zu langsam", state: "fail" }, { text: "Passenden Router gefunden", state: "done" }, { text: "Mandatsprüfung: 189 € über Limit 150 €", state: "warn" }], noPartner: true, duration: 2400 },
+      { steps: [{ text: "Rufnummernmitnahme geprüft", state: "done" }, { text: "Technikertermin reserviert", state: "done" }, { text: "Router-Kompatibilität geprüft — zu langsam", state: "fail" }, { text: "Passenden Router gefunden", state: "done" }, { text: "Mandatsprüfung: 189 € über Limit 150 €", state: "warn" }, { text: "Zahlung ausgelöst", state: "done" }], noPartner: true, duration: 1400 }
+    ]
+  },
+  {
+    id: 5, action: 'buergeramt',
+    animatedSequence: [
+      { steps: [{ text: "Zuständiges Bürgeramt ermittelt", state: "done" }, { text: "Agenten-Endpunkt Bürgeramt wird gesucht ...", state: "current" }], noPartner: true, duration: 4200 },
+      { steps: [{ text: "Zuständiges Bürgeramt ermittelt", state: "done" }, { text: "Agenten-Endpunkt Bürgeramt nicht erreichbar", state: "fail" }], noPartner: true, duration: 3200 },
+      { steps: [{ text: "Zuständiges Bürgeramt ermittelt", state: "done" }, { text: "Agenten-Endpunkt Bürgeramt nicht erreichbar", state: "fail" }, { text: "Alternative Kontaktwege gefunden: Fax <i class=\"ti ti-printer\" style=\"font-size:12px;vertical-align:-1px\"></i>", state: "done" }], noPartner: true, duration: 3200 },
+      { steps: [{ text: "Zuständiges Bürgeramt ermittelt", state: "done" }, { text: "Agenten-Endpunkt Bürgeramt nicht erreichbar", state: "fail" }, { text: "Alternative Kontaktwege gefunden: Fax <i class=\"ti ti-printer\" style=\"font-size:12px;vertical-align:-1px\"></i>", state: "done" }, { text: "Termin und Formular vorbereitet", state: "done" }], noPartner: true, duration: 1600 }
+    ]
+  },
+  {
+    id: 6, action: 'freigabe',
+    animatedSequence: [
+      { steps: [], noPartner: true, duration: 300, openApproval: true }
+    ]
+  }
+];
 
-  // specular
-  var sp=ctx.createRadialGradient(CX-28,CY-32,2,CX-22,CY-24,R*.5);
-  sp.addColorStop(0,'rgba(255,255,255,.30)');
-  sp.addColorStop(.55,'rgba(255,255,255,.05)');
-  sp.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);ctx.fillStyle=sp;ctx.fill();
+/* ───────────────────────────────────────────────
+   SCENE ENGINE
+─────────────────────────────────────────────── */
+function clearSceneTimers() {
+  sceneTimers.forEach(function(t) { clearTimeout(t); });
+  sceneTimers = [];
+}
 
-  // rim
-  var rim=ctx.createRadialGradient(CX,CY,R*.74,CX,CY,R);
-  rim.addColorStop(0,'rgba(80,60,200,0)');
-  rim.addColorStop(.68,E>0.03?'rgba(40,155,255,'+(0.07+E*.14)+')':'rgba(110,80,210,.04)');
-  rim.addColorStop(1,  E>0.03?'rgba(55,195,255,'+(0.17+E*.27)+')':'rgba(150,110,240,.08)');
-  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);ctx.fillStyle=rim;ctx.fill();
+function activateScene(idx) {
+  clearSceneTimers();
+  var s = scenes[idx];
+
+  // Move canvas sphere into scene zone (scaled down to fit)
+  sc.width = 160; sc.height = 160;
+  CX = 80; CY = 80; R = 65;
+  document.getElementById('sceneSphereZone').appendChild(sc);
+
+  // Hide default, show scene
+  document.getElementById('co-default').style.display = 'none';
+  document.getElementById('co-scene').classList.add('active');
+
+  // Clear overlay
+  document.getElementById('overlayLayer').innerHTML = '';
+
+  stopExchange();
+  playSequence(s);
+}
+
+function renderSteps(list) {
+  var el = document.getElementById('feedSteps');
+  el.innerHTML = '';
+  var iconMap = { done: 'ti-check', current: 'ti-point-filled', fail: 'ti-x', warn: 'ti-alert-triangle' };
+  list.forEach(function(s) {
+    var row = document.createElement('div');
+    row.className = 'feed-step ' + s.state + (s.a2a ? ' a2a' : '');
+    row.innerHTML = '<i class="ti ' + iconMap[s.state] + '"></i><span class="feed-step-text">' + s.text + '</span>';
+    el.appendChild(row);
+  });
+}
+
+function startExchange() { document.getElementById('exchangeDot').classList.add('running'); }
+function stopExchange()  { document.getElementById('exchangeDot').classList.remove('running'); }
+
+function setHeaderVisible(visible) {
+  var disp = visible ? 'flex' : 'none';
+  document.getElementById('feedSideMine').style.display = disp;
+  document.getElementById('feedExchange').style.display = disp;
+  document.getElementById('feedSidePartner').style.display = disp;
+}
+
+function setSpeaker(s, speaker, pulse) {
+  var mineIcon    = document.getElementById('feedMineIcon');
+  var partnerIcon = document.getElementById('feedLogo');
+  var mineSide    = document.getElementById('feedSideMine');
+  var partnerSide = document.getElementById('feedSidePartner');
+
+  partnerIcon.style.background = s.logoColor || '#3a3a3c';
+  if (s.logo) {
+    partnerIcon.textContent = s.logo;
+  } else if (s.logoIcon) {
+    partnerIcon.innerHTML = '<i class="ti ' + s.logoIcon + '" style="font-size:14px;color:#fff"></i>';
+  } else {
+    partnerIcon.textContent = '';
+  }
+  document.getElementById('feedPartnerLabel').textContent = s.logoLabel || 'Anbieter';
+
+  mineIcon.classList.toggle('active', speaker === 'mine');
+  partnerIcon.classList.toggle('active', speaker === 'partner');
+  mineSide.classList.toggle('dim', speaker === 'partner');
+  partnerSide.classList.toggle('dim', speaker === 'mine');
+
+  if (pulse) {
+    var el = speaker === 'partner' ? partnerIcon : mineIcon;
+    el.style.transform = 'scale(1.25)';
+    setTimeout(function() { el.style.transform = 'scale(1)'; }, 350);
+  }
+}
+
+function playSequence(s) {
+  var seq = s.animatedSequence;
+  var sceneObj = Object.assign({}, s);
+  var i = 0;
+  function step() {
+    if (i >= seq.length) return;
+    var frame = seq[i];
+    if (frame.logoColor !== undefined) {
+      sceneObj = Object.assign({}, sceneObj, {
+        logo: frame.logo, logoIcon: frame.logoIcon,
+        logoColor: frame.logoColor, logoLabel: frame.logoLabel
+      });
+    }
+    renderSteps(frame.steps);
+    setHeaderVisible(!frame.noPartner);
+    if (!frame.noPartner) setSpeaker(sceneObj, frame.speaker || 'mine', frame.pulse);
+    if (frame.exchange && !frame.noPartner) startExchange(); else stopExchange();
+    if (frame.openCarousel) showCarousel();
+    if (frame.openApproval) showApproval();
+    var t = setTimeout(function() { i++; step(); }, frame.duration);
+    sceneTimers.push(t);
+  }
+  step();
+}
+
+function showCarousel() {
+  var overlayLayer = document.getElementById('overlayLayer');
+  overlayLayer.innerHTML = `
+    <div class="carousel-overlay">
+      <div class="carousel-box">
+        <div class="carousel-title">Energieangebote</div>
+        <div class="track-wrap" id="trackWrap">
+          <div class="track" id="track">
+            <div class="offer-card"><div class="offer-inner rec">
+              <span class="offer-badge">Empfohlen</span>
+              <div class="offer-title">Wallbox-optimiert</div>
+              <div class="offer-sub">Nachttarif für eure zwei E-Autos</div>
+              <div class="offer-row"><span>Grundpreis</span><span>14,90 €/Mon</span></div>
+              <div class="offer-row"><span>Arbeitspreis</span><span>28,4 ct/kWh</span></div>
+              <div class="offer-row"><span>Preisgarantie</span><span>24 Monate</span></div>
+              <div class="offer-row"><span>Bonus</span><span>120 € Wallbox</span></div>
+            </div></div>
+            <div class="offer-card"><div class="offer-inner">
+              <div class="offer-title">Preisstabil</div>
+              <div class="offer-sub">24 Monate Fixpreis</div>
+              <div class="offer-row"><span>Grundpreis</span><span>12,50 €/Mon</span></div>
+              <div class="offer-row"><span>Arbeitspreis</span><span>31,2 ct/kWh</span></div>
+              <div class="offer-row"><span>Preisgarantie</span><span>24 Monate</span></div>
+              <div class="offer-row"><span>Bonus</span><span>Keiner</span></div>
+            </div></div>
+            <div class="offer-card"><div class="offer-inner">
+              <div class="offer-title">Bestandstarif</div>
+              <div class="offer-sub">Mit Umzugsservice</div>
+              <div class="offer-row"><span>Grundpreis</span><span>11,90 €/Mon</span></div>
+              <div class="offer-row"><span>Arbeitspreis</span><span>33,8 ct/kWh</span></div>
+              <div class="offer-row"><span>Laufzeit</span><span>Monatlich</span></div>
+              <div class="offer-row"><span>Bonus</span><span>Umzugsservice</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="dots" id="dots"></div>
+      </div>
+    </div>`;
+  setupCarousel();
+}
+
+function setupCarousel() {
+  var track  = document.getElementById('track');
+  var dotsEl = document.getElementById('dots');
+  var wrap   = document.getElementById('trackWrap');
+  var index  = 0;
+  for (var i = 0; i < 3; i++) {
+    var d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    dotsEl.appendChild(d);
+  }
+  var dots = dotsEl.children;
+  function update() {
+    track.style.transform = 'translateX(-' + (index * 100) + '%)';
+    for (var i = 0; i < 3; i++) dots[i].className = 'dot' + (i === index ? ' active' : '');
+  }
+  var startX = 0, deltaX = 0, dragging = false;
+  wrap.addEventListener('pointerdown', function(e) { dragging = true; startX = e.clientX; track.style.transition = 'none'; });
+  wrap.addEventListener('pointermove', function(e) {
+    if (!dragging) return;
+    deltaX = e.clientX - startX;
+    track.style.transform = 'translateX(calc(-' + (index * 100) + '% + ' + deltaX + 'px))';
+  });
+  function endDrag() {
+    if (!dragging) return; dragging = false;
+    track.style.transition = 'transform .4s cubic-bezier(.4,0,.2,1)';
+    if (deltaX < -40 && index < 2) index++;
+    else if (deltaX > 40 && index > 0) index--;
+    deltaX = 0; update();
+  }
+  wrap.addEventListener('pointerup', endDrag);
+  wrap.addEventListener('pointerleave', endDrag);
+}
+
+function showApproval() {
+  var overlayLayer = document.getElementById('overlayLayer');
+  overlayLayer.innerHTML = `
+    <div class="approval-overlay">
+      <div class="approval-card">
+        <div class="approval-title">Freigabe · 4 Vorgänge</div>
+        <div class="approval-row ok"><i class="ti ti-check"></i><span class="approval-text">Energie — Wallbox-Vertrag abgeschlossen</span></div>
+        <div class="approval-row ok"><i class="ti ti-check"></i><span class="approval-text">Glasfaser — Wechsel eingeleitet</span></div>
+        <div class="approval-row manual"><i class="ti ti-user"></i><span class="approval-text">Versicherung — Handarbeit, kein Agent erreichbar</span></div>
+        <div class="approval-row manual"><i class="ti ti-user"></i><span class="approval-text">Bürgeramt — Handarbeit, kein Agent erreichbar</span></div>
+        <button class="approval-btn">Freigeben</button>
+      </div>
+    </div>`;
 }
 </script>
 </body>
